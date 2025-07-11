@@ -1,23 +1,21 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Package, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 
 const AddItem = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -27,6 +25,7 @@ const AddItem = () => {
     deposit_amount: '',
     location: ''
   });
+  const [loading, setLoading] = useState(false);
 
   const categories = [
     'electronics', 'tools', 'sports', 'books', 'furniture', 
@@ -37,62 +36,48 @@ const AddItem = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Authentication required",
-        description: "Please sign in to add an item."
-      });
-      return;
-    }
+    if (!user) return;
 
     setLoading(true);
-
-    const { error } = await supabase
-      .from('items')
-      .insert({
+    try {
+      const { error } = await supabase.from('items').insert({
         owner_id: user.id,
         title: formData.title,
         description: formData.description,
-        category: formData.category,
-        condition: formData.condition,
+        category: formData.category as any,
+        condition: formData.condition as any,
         price_per_day: parseFloat(formData.price_per_day),
-        deposit_amount: formData.deposit_amount ? parseFloat(formData.deposit_amount) : 0,
+        deposit_amount: parseFloat(formData.deposit_amount) || 0,
         location: formData.location
       });
 
-    if (error) {
+      if (error) throw error;
+
       toast({
-        variant: "destructive",
-        title: "Error adding item",
-        description: error.message
+        title: "Success!",
+        description: "Your item has been listed successfully.",
       });
-    } else {
-      toast({
-        title: "Item added successfully!",
-        description: "Your item is now available for borrowing."
-      });
+      
       navigate('/dashboard');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="text-center p-8">
-            <h2 className="text-xl font-semibold mb-4">Please sign in to add an item</h2>
-            <Button onClick={() => navigate('/auth')}>Sign In</Button>
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-600 mb-4">Please log in to add items</p>
+            <Button onClick={() => navigate('/auth')}>Login</Button>
           </CardContent>
         </Card>
       </div>
@@ -103,56 +88,57 @@ const AddItem = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center mb-8">
-            <Button 
-              variant="ghost" 
+          <div className="flex items-center mb-6">
+            <Button
+              variant="ghost"
               onClick={() => navigate('/dashboard')}
               className="mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Add New Item</h1>
-              <p className="text-gray-600">List an item for others to borrow</p>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Add New Item</h1>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Package className="h-5 w-5 mr-2" />
-                Item Details
-              </CardTitle>
+              <CardTitle>Item Details</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Item Title *</Label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Item Title *
+                  </label>
                   <Input
-                    id="title"
-                    placeholder="e.g., Canon EOS R5 Camera"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
                     required
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    placeholder="Enter item title"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
                   <Textarea
-                    id="description"
-                    placeholder="Describe your item, its features, and any special instructions..."
                     value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Describe your item"
                     rows={4}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category *
+                    </label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({...formData, category: value})}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -166,16 +152,21 @@ const AddItem = () => {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="condition">Condition *</Label>
-                    <Select value={formData.condition} onValueChange={(value) => handleInputChange('condition', value)}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Condition *
+                    </label>
+                    <Select
+                      value={formData.condition}
+                      onValueChange={(value) => setFormData({...formData, condition: value})}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
                       <SelectContent>
                         {conditions.map((condition) => (
                           <SelectItem key={condition} value={condition}>
-                            {condition.replace('_', ' ').charAt(0).toUpperCase() + condition.replace('_', ' ').slice(1)}
+                            {condition.replace('_', ' ').toUpperCase()}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -184,58 +175,57 @@ const AddItem = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price per Day ($) *</Label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Price per Day ($) *
+                    </label>
                     <Input
-                      id="price"
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="10.00"
-                      value={formData.price_per_day}
-                      onChange={(e) => handleInputChange('price_per_day', e.target.value)}
                       required
+                      value={formData.price_per_day}
+                      onChange={(e) => setFormData({...formData, price_per_day: e.target.value})}
+                      placeholder="0.00"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="deposit">Security Deposit ($)</Label>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Security Deposit ($)
+                    </label>
                     <Input
-                      id="deposit"
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="50.00"
                       value={formData.deposit_amount}
-                      onChange={(e) => handleInputChange('deposit_amount', e.target.value)}
+                      onChange={(e) => setFormData({...formData, deposit_amount: e.target.value})}
+                      placeholder="0.00"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
                   <Input
-                    id="location"
-                    placeholder="e.g., Downtown, Seattle, WA"
                     value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    placeholder="City, State"
                   />
                 </div>
 
                 <div className="flex justify-end space-x-4">
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant="outline"
                     onClick={() => navigate('/dashboard')}
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={loading}
-                    className="gradient-primary"
-                  >
-                    {loading ? 'Adding Item...' : 'Add Item'}
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Adding...' : 'Add Item'}
                   </Button>
                 </div>
               </form>

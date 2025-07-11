@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 import AddItem from "./pages/AddItem";
+import ItemDetail from "./pages/ItemDetail";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-item" element={<AddItem />} />
+            <Route path="/item/:id" element={<ItemDetail />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
