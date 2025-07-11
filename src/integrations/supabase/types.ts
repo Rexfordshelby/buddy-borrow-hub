@@ -14,7 +14,259 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      borrow_requests: {
+        Row: {
+          borrower_id: string
+          created_at: string | null
+          end_date: string
+          id: string
+          item_id: string
+          lender_id: string
+          message: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["request_status"] | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          borrower_id: string
+          created_at?: string | null
+          end_date: string
+          id?: string
+          item_id: string
+          lender_id: string
+          message?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["request_status"] | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          borrower_id?: string
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          item_id?: string
+          lender_id?: string
+          message?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["request_status"] | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "borrow_requests_borrower_id_fkey"
+            columns: ["borrower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "borrow_requests_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "borrow_requests_lender_id_fkey"
+            columns: ["lender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          availability: boolean | null
+          category: Database["public"]["Enums"]["item_category"]
+          condition: Database["public"]["Enums"]["item_condition"]
+          created_at: string | null
+          deposit_amount: number | null
+          description: string | null
+          id: string
+          images: string[] | null
+          location: string | null
+          owner_id: string
+          price_per_day: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          availability?: boolean | null
+          category: Database["public"]["Enums"]["item_category"]
+          condition: Database["public"]["Enums"]["item_condition"]
+          created_at?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          location?: string | null
+          owner_id: string
+          price_per_day: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          availability?: boolean | null
+          category?: Database["public"]["Enums"]["item_category"]
+          condition?: Database["public"]["Enums"]["item_condition"]
+          created_at?: string | null
+          deposit_amount?: number | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          location?: string | null
+          owner_id?: string
+          price_per_day?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          request_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          request_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          request_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "borrow_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          location: string | null
+          phone: string | null
+          rating: number | null
+          total_reviews: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          location?: string | null
+          phone?: string | null
+          rating?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          phone?: string | null
+          rating?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          request_id: string
+          reviewee_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          request_id: string
+          reviewee_id: string
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          request_id?: string
+          reviewee_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "borrow_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +275,25 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      item_category:
+        | "electronics"
+        | "tools"
+        | "sports"
+        | "books"
+        | "furniture"
+        | "kitchen"
+        | "automotive"
+        | "clothing"
+        | "gaming"
+        | "other"
+      item_condition: "new" | "like_new" | "good" | "fair"
+      request_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "active"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +420,28 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      item_category: [
+        "electronics",
+        "tools",
+        "sports",
+        "books",
+        "furniture",
+        "kitchen",
+        "automotive",
+        "clothing",
+        "gaming",
+        "other",
+      ],
+      item_condition: ["new", "like_new", "good", "fair"],
+      request_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+    },
   },
 } as const
