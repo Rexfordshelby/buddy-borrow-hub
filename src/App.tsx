@@ -11,6 +11,7 @@ import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 import AddItem from "./pages/AddItem";
 import ItemDetail from "./pages/ItemDetail";
+import RequestDetail from "./pages/RequestDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-item" element={<AddItem />} />
             <Route path="/item/:id" element={<ItemDetail />} />
+            <Route path="/request/:id" element={<RequestDetail />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -6,13 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Calendar as CalendarIcon, MapPin, Star, User, MessageCircle, CreditCard } from 'lucide-react';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { ArrowLeft, Calendar as CalendarIcon, MapPin, Star, User, MessageCircle } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 
 interface Item {
   id: string;
@@ -114,7 +113,7 @@ const ItemDetail = () => {
 
     setRequestLoading(true);
     try {
-      const { error } = await supabase.from('borrow_requests').insert({
+      const { data: requestData, error } = await supabase.from('borrow_requests').insert({
         item_id: item.id,
         borrower_id: user.id,
         lender_id: item.owner_id,
@@ -122,18 +121,19 @@ const ItemDetail = () => {
         end_date: format(endDate, 'yyyy-MM-dd'),
         total_amount: calculateTotal(),
         message: message,
-        status: 'pending'
-      });
+        status: 'pending',
+        original_price_per_day: item.price_per_day
+      }).select().single();
 
       if (error) throw error;
 
       toast({
         title: "Request Sent!",
-        description: "Your borrow request has been sent to the owner.",
+        description: "Your borrow request has been sent to the owner for approval.",
       });
 
-      // Redirect to dashboard to see the request
-      navigate('/dashboard');
+      // Navigate to the request detail page
+      navigate(`/request/${requestData.id}`);
     } catch (error) {
       console.error('Error creating borrow request:', error);
       toast({
@@ -143,54 +143,6 @@ const ItemDetail = () => {
       });
     } finally {
       setRequestLoading(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to make a payment.",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      toast({
-        title: "Dates Required",
-        description: "Please select start and end dates.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          item_id: item?.id,
-          amount: calculateTotal() * 100, // Convert to cents
-          currency: 'usd',
-          description: `Rental: ${item?.title}`,
-          start_date: format(startDate, 'yyyy-MM-dd'),
-          end_date: format(endDate, 'yyyy-MM-dd')
-        }
-      });
-
-      if (error) throw error;
-
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      toast({
-        title: "Payment Error",
-        description: "Failed to process payment. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -328,7 +280,7 @@ const ItemDetail = () => {
             {!isOwner && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Book This Item</CardTitle>
+                  <CardTitle>Request to Borrow</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -386,7 +338,7 @@ const ItemDetail = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Message to Owner (Optional)
+                      Message to Owner
                     </label>
                     <Textarea
                       value={message}
@@ -414,31 +366,23 @@ const ItemDetail = () => {
                       )}
                       <hr className="my-2" />
                       <div className="flex justify-between items-center font-semibold text-lg">
-                        <span>Total:</span>
+                        <span>Estimated Total:</span>
                         <span>${calculateTotal()}</span>
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        *Final amount may change based on negotiations and approval
+                      </p>
                     </div>
                   )}
 
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={handleBorrowRequest}
-                      disabled={requestLoading || !startDate || !endDate}
-                      className="flex-1"
-                      variant="outline"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      {requestLoading ? 'Sending...' : 'Send Request'}
-                    </Button>
-                    <Button
-                      onClick={handlePayment}
-                      disabled={!startDate || !endDate}
-                      className="flex-1"
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Pay Now
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={handleBorrowRequest}
+                    disabled={requestLoading || !startDate || !endDate}
+                    className="w-full"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    {requestLoading ? 'Sending Request...' : 'Send Borrow Request'}
+                  </Button>
                 </CardContent>
               </Card>
             )}

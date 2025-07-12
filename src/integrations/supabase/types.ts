@@ -23,6 +23,11 @@ export type Database = {
           item_id: string
           lender_id: string
           message: string | null
+          negotiated_price_per_day: number | null
+          negotiation_message: string | null
+          original_price_per_day: number | null
+          payment_session_id: string | null
+          payment_status: string | null
           start_date: string
           status: Database["public"]["Enums"]["request_status"] | null
           total_amount: number
@@ -36,6 +41,11 @@ export type Database = {
           item_id: string
           lender_id: string
           message?: string | null
+          negotiated_price_per_day?: number | null
+          negotiation_message?: string | null
+          original_price_per_day?: number | null
+          payment_session_id?: string | null
+          payment_status?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["request_status"] | null
           total_amount: number
@@ -49,6 +59,11 @@ export type Database = {
           item_id?: string
           lender_id?: string
           message?: string | null
+          negotiated_price_per_day?: number | null
+          negotiation_message?: string | null
+          original_price_per_day?: number | null
+          payment_session_id?: string | null
+          payment_status?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["request_status"] | null
           total_amount?: number
@@ -167,6 +182,99 @@ export type Database = {
           {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      negotiations: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          proposed_price_per_day: number
+          request_id: string
+          sender_id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          proposed_price_per_day: number
+          request_id: string
+          sender_id: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          proposed_price_per_day?: number
+          request_id?: string
+          sender_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "borrow_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negotiations_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          read: boolean | null
+          request_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          request_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          read?: boolean | null
+          request_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "borrow_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -294,6 +402,9 @@ export type Database = {
         | "active"
         | "completed"
         | "cancelled"
+        | "negotiating"
+        | "payment_pending"
+        | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -441,6 +552,9 @@ export const Constants = {
         "active",
         "completed",
         "cancelled",
+        "negotiating",
+        "payment_pending",
+        "paid",
       ],
     },
   },

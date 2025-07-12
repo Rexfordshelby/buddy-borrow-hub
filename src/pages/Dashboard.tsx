@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Package, MessageSquare, Wallet, Calendar, Star } from 'lucide-react';
+import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell } from 'lucide-react';
 
 interface BorrowRequest {
   id: string;
@@ -16,6 +16,7 @@ interface BorrowRequest {
   end_date: string;
   total_amount: number;
   created_at: string;
+  payment_status: string;
   items: {
     title: string;
     price_per_day: number;
@@ -33,12 +34,22 @@ interface UserItem {
   created_at: string;
 }
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([]);
   const [lendRequests, setLendRequests] = useState<BorrowRequest[]>([]);
   const [userItems, setUserItems] = useState<UserItem[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,9 +92,18 @@ const Dashboard = () => {
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
 
+    // Fetch notifications
+    const { data: notificationsData } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
     setBorrowRequests(borrowData || []);
     setLendRequests(lendData || []);
     setUserItems(itemsData || []);
+    setNotifications(notificationsData || []);
     setLoading(false);
   };
 
@@ -92,10 +112,17 @@ const Dashboard = () => {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
+      case 'negotiating': return 'bg-blue-100 text-blue-800';
+      case 'payment_pending': return 'bg-purple-100 text-purple-800';
+      case 'paid': return 'bg-green-100 text-green-800';
       case 'active': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleRequestClick = (requestId: string) => {
+    navigate(`/request/${requestId}`);
   };
 
   if (!user) {
@@ -129,10 +156,11 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="borrowing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="borrowing">My Borrowing</TabsTrigger>
             <TabsTrigger value="lending">My Lending</TabsTrigger>
             <TabsTrigger value="items">My Items</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
           </TabsList>
 
@@ -158,7 +186,11 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {borrowRequests.map((request) => (
-                      <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div 
+                        key={request.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleRequestClick(request.id)}
+                      >
                         <div className="flex-1">
                           <h3 className="font-semibold">{request.items.title}</h3>
                           <p className="text-sm text-gray-600">
@@ -170,7 +202,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                           <Badge className={getStatusColor(request.status)}>
-                            {request.status}
+                            {request.status.replace('_', ' ').toUpperCase()}
                           </Badge>
                           <p className="text-sm font-semibold mt-1">
                             ${request.total_amount}
@@ -206,7 +238,11 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {lendRequests.map((request) => (
-                      <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div 
+                        key={request.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleRequestClick(request.id)}
+                      >
                         <div className="flex-1">
                           <h3 className="font-semibold">{request.items.title}</h3>
                           <p className="text-sm text-gray-600">
@@ -218,7 +254,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                           <Badge className={getStatusColor(request.status)}>
-                            {request.status}
+                            {request.status.replace('_', ' ').toUpperCase()}
                           </Badge>
                           <p className="text-sm font-semibold mt-1">
                             ${request.total_amount}
@@ -270,6 +306,51 @@ const Dashboard = () => {
                           </p>
                         </CardContent>
                       </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Bell className="h-5 w-5 mr-2" />
+                  Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No notifications yet
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div 
+                        key={notification.id}
+                        className={`p-4 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{notification.title}</h4>
+                            {notification.message && (
+                              <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {new Date(notification.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

@@ -19,31 +19,29 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get the authenticated user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    
-    if (!user?.email) {
-      throw new Error("User not authenticated");
-    }
+    if (!user?.email) throw new Error("User not authenticated");
 
-    const { item_id, amount, currency, description, start_date, end_date } = await req.json();
+    const { item_id, request_id, amount, currency, description } = await req.json();
 
-    // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
     // Check if customer exists
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ 
+      email: user.email, 
+      limit: 1 
+    });
+    
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
 
-    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -51,7 +49,7 @@ serve(async (req) => {
         {
           price_data: {
             currency: currency || "usd",
-            product_data: {
+            product_data: { 
               name: description || "Item Rental",
             },
             unit_amount: amount,
@@ -60,22 +58,38 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/item/${item_id}`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&request_id=${request_id}`,
+      cancel_url: `${req.headers.get("origin")}/request/${request_id}`,
       metadata: {
-        item_id,
+        item_id: item_id,
+        request_id: request_id,
         user_id: user.id,
-        start_date,
-        end_date,
       },
     });
+
+    // Update the request with payment session ID
+    if (request_id) {
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+
+      await supabaseService
+        .from("borrow_requests")
+        .update({ 
+          payment_session_id: session.id,
+          payment_status: 'processing'
+        })
+        .eq("id", request_id);
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error creating payment session:", error);
+    console.error("Payment creation error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
