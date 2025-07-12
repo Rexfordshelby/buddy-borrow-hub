@@ -8,11 +8,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
+import Services from "./pages/Services";
 import Dashboard from "./pages/Dashboard";
 import AddItem from "./pages/AddItem";
 import ItemDetail from "./pages/ItemDetail";
 import RequestDetail from "./pages/RequestDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,11 +30,13 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-item" element={<AddItem />} />
             <Route path="/item/:id" element={<ItemDetail />} />
             <Route path="/request/:id" element={<RequestDetail />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +23,8 @@ interface RequestData {
   negotiation_message: string;
   payment_status: string;
   created_at: string;
+  borrower_id: string;
+  lender_id: string;
   items: {
     id: string;
     title: string;
