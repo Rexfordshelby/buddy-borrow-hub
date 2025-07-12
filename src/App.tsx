@@ -11,6 +11,7 @@ import Marketplace from "./pages/Marketplace";
 import Services from "./pages/Services";
 import Dashboard from "./pages/Dashboard";
 import AddItem from "./pages/AddItem";
+import AddService from "./pages/AddService";
 import ItemDetail from "./pages/ItemDetail";
 import RequestDetail from "./pages/RequestDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-item" element={<AddItem />} />
+            <Route path="/add-service" element={<AddService />} />
             <Route path="/item/:id" element={<ItemDetail />} />
             <Route path="/request/:id" element={<RequestDetail />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
