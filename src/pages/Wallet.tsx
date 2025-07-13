@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,9 @@ import { Wallet as WalletIcon, CreditCard, ArrowUpRight, ArrowDownLeft, Clock, C
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import WithdrawalModal from '@/components/WithdrawalModal';
+import ProviderWithdrawalCard from '@/components/ProviderWithdrawalCard';
+import SavedPaymentMethods from '@/components/SavedPaymentMethods';
+import EnhancedWithdrawalModal from '@/components/EnhancedWithdrawalModal';
 import type { Tables } from '@/integrations/supabase/types';
 
 type WalletData = Tables<'user_wallets'>;
@@ -21,6 +23,7 @@ const Wallet = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
+  const [enhancedWithdrawalOpen, setEnhancedWithdrawalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -137,6 +140,11 @@ const Wallet = () => {
     fetchTransactions();
   };
 
+  // Filter transactions for recent withdrawals
+  const recentWithdrawals = transactions
+    .filter(t => t.type === 'withdrawal')
+    .slice(0, 5);
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -166,64 +174,82 @@ const Wallet = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Wallet</h1>
-          <p className="text-gray-600">Manage your payments and earnings</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Provider Wallet</h1>
+          <p className="text-gray-600">Manage your earnings and withdrawals</p>
         </div>
 
-        {/* Balance Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-trust-600 to-trust-700 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <WalletIcon className="h-6 w-6 mr-2" />
-                Available Balance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-4">
-                ${wallet ? Number(wallet.available_balance).toFixed(2) : '0.00'}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Funds
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-white border-white hover:bg-white hover:text-trust-600"
-                  onClick={() => setWithdrawalModalOpen(true)}
-                  disabled={!wallet || Number(wallet.available_balance) <= 0}
-                >
-                  <Minus className="h-4 w-4 mr-2" />
-                  Withdraw
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Enhanced Withdrawal */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Provider Withdrawal Card */}
+            <ProviderWithdrawalCard
+              availableBalance={Number(wallet?.available_balance || 0)}
+              pendingBalance={Number(wallet?.pending_balance || 0)}
+              onWithdraw={() => setEnhancedWithdrawalOpen(true)}
+              recentWithdrawals={recentWithdrawals}
+            />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="h-6 w-6 mr-2 text-yellow-600" />
-                Pending Earnings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold mb-4 text-yellow-600">
-                ${wallet ? Number(wallet.pending_balance).toFixed(2) : '0.00'}
-              </div>
-              <p className="text-sm text-gray-600">
-                Earnings from completed services that will be available after the hold period.
-              </p>
-            </CardContent>
-          </Card>
+            {/* Original Balance Cards for Reference */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-gradient-to-r from-trust-600 to-trust-700 text-white">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <WalletIcon className="h-6 w-6 mr-2" />
+                    Available Balance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-4">
+                    ${wallet ? Number(wallet.available_balance).toFixed(2) : '0.00'}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Funds
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-white border-white hover:bg-white hover:text-trust-600"
+                      onClick={() => setWithdrawalModalOpen(true)}
+                      disabled={!wallet || Number(wallet.available_balance) <= 0}
+                    >
+                      <Minus className="h-4 w-4 mr-2" />
+                      Quick Withdraw
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Clock className="h-6 w-6 mr-2 text-yellow-600" />
+                    Pending Earnings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-4 text-yellow-600">
+                    ${wallet ? Number(wallet.pending_balance).toFixed(2) : '0.00'}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Earnings from completed services that will be available after the hold period.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Right Column - Saved Payment Methods */}
+          <div className="space-y-6">
+            <SavedPaymentMethods />
+          </div>
         </div>
 
         {/* Payment Methods & Transactions */}
-        <Tabs defaultValue="transactions" className="space-y-6">
+        <Tabs defaultValue="transactions" className="space-y-6 mt-8">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="payment-methods">Payment Methods</TabsTrigger>
@@ -246,7 +272,7 @@ const Wallet = () => {
                     {transactions.map((transaction) => {
                       const { amount, isPositive, sign } = getTransactionAmount(transaction);
                       return (
-                        <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                           <div className="flex items-center space-x-4">
                             {getTransactionIcon(transaction.type)}
                             <div>
@@ -337,11 +363,36 @@ const Wallet = () => {
         </Tabs>
       </div>
 
+      {/* Original Withdrawal Modal */}
       <WithdrawalModal
         isOpen={withdrawalModalOpen}
         onClose={() => setWithdrawalModalOpen(false)}
         availableBalance={Number(wallet?.available_balance || 0)}
         onWithdrawalComplete={handleWithdrawalComplete}
+      />
+
+      {/* Enhanced Withdrawal Modal */}
+      <EnhancedWithdrawalModal
+        isOpen={enhancedWithdrawalOpen}
+        onClose={() => setEnhancedWithdrawalOpen(false)}
+        availableBalance={Number(wallet?.available_balance || 0)}
+        onWithdrawalComplete={handleWithdrawalComplete}
+        savedPaymentMethods={[
+          {
+            id: '1',
+            type: 'bank',
+            nickname: 'Main Checking',
+            last_four: '1234',
+            is_default: true
+          },
+          {
+            id: '2',
+            type: 'card',
+            nickname: 'Business Card',
+            last_four: '5678',
+            is_default: false
+          }
+        ]}
       />
     </div>
   );
