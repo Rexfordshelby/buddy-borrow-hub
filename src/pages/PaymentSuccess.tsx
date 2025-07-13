@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle, ArrowRight, Download, Bell } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const PaymentSuccess = () => {
@@ -13,35 +12,25 @@ const PaymentSuccess = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const sessionId = searchParams.get('session_id');
   const requestId = searchParams.get('request_id');
+  const serviceRequestId = searchParams.get('service_request_id');
 
   useEffect(() => {
-    if (sessionId && requestId) {
+    if (sessionId && (requestId || serviceRequestId)) {
       verifyPayment();
     }
-  }, [sessionId, requestId]);
+  }, [sessionId, requestId, serviceRequestId]);
 
   const verifyPayment = async () => {
     try {
-      // Update the borrow request status to paid
-      const { error } = await supabase
-        .from('borrow_requests')
-        .update({ 
-          status: 'paid',
-          payment_status: 'completed'
-        })
-        .eq('id', requestId)
-        .eq('payment_session_id', sessionId);
-
-      if (error) throw error;
-
-      setPaymentVerified(true);
-      toast({
-        title: "Payment Successful!",
-        description: "Your rental has been confirmed.",
-      });
+      if (requestId) {
+        await handleItemRentalPayment();
+      } else if (serviceRequestId) {
+        await handleServicePayment();
+      }
     } catch (error) {
       console.error('Error verifying payment:', error);
       toast({
@@ -52,6 +41,176 @@ const PaymentSuccess = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleItemRentalPayment = async () => {
+    // Update borrow request status
+    const { data: requestData, error: updateError } = await supabase
+      .from('borrow_requests')
+      .update({ 
+        status: 'paid',
+        payment_status: 'completed'
+      })
+      .eq('id', requestId)
+      .eq('payment_session_id', sessionId)
+      .select(`
+        *,
+        items (title, owner_id),
+        profiles!borrow_requests_borrower_id_fkey (full_name)
+      `)
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Create notification for lender
+    await supabase.from('notifications').insert({
+      user_id: requestData.items.owner_id,
+      type: 'rental_payment_received',
+      title: 'Payment Received!',
+      message: `${requestData.profiles.full_name} has paid for "${requestData.items.title}". Please prepare the item for delivery.`,
+      request_id: requestId
+    });
+
+    // Create wallet transaction for lender
+    await supabase.from('wallet_transactions').insert({
+      user_id: requestData.lender_id,
+      type: 'payment_received',
+      amount: requestData.total_amount,
+      description: `Payment received for renting "${requestData.items.title}"`,
+      related_request_id: requestId,
+      from_user_id: requestData.borrower_id,
+      to_user_id: requestData.lender_id,
+      status: 'completed'
+    });
+
+    // Update lender's wallet balance
+    await updateWalletBalance(requestData.lender_id, requestData.total_amount, true);
+
+    setReceiptData({
+      type: 'rental',
+      title: requestData.items.title,
+      amount: requestData.total_amount,
+      dates: `${requestData.start_date} to ${requestData.end_date}`,
+      id: requestId
+    });
+
+    setPaymentVerified(true);
+    toast({
+      title: "Payment Successful!",
+      description: "Your rental has been confirmed. The lender has been notified.",
+    });
+  };
+
+  const handleServicePayment = async () => {
+    // Update service request status
+    const { data: serviceData, error: updateError } = await supabase
+      .from('service_requests')
+      .update({ 
+        status: 'accepted',
+        payment_status: 'paid'
+      })
+      .eq('id', serviceRequestId)
+      .eq('payment_session_id', sessionId)
+      .select(`
+        *,
+        services (title, provider_id),
+        profiles!service_requests_customer_id_fkey (full_name)
+      `)
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Create notification for service provider
+    await supabase.from('notifications').insert({
+      user_id: serviceData.services.provider_id,
+      type: 'service_booking',
+      title: 'New Service Booking!',
+      message: `${serviceData.profiles.full_name} has booked your "${serviceData.services.title}" service. Check your dashboard for details.`,
+      request_id: serviceRequestId
+    });
+
+    // Create wallet transaction for provider
+    await supabase.from('wallet_transactions').insert({
+      user_id: serviceData.provider_id,
+      type: 'service_payment',
+      amount: serviceData.total_amount,
+      description: `Payment received for "${serviceData.services.title}" service`,
+      related_service_id: serviceData.service_id,
+      from_user_id: serviceData.customer_id,
+      to_user_id: serviceData.provider_id,
+      status: 'completed'
+    });
+
+    // Update provider's wallet balance
+    await updateWalletBalance(serviceData.provider_id, serviceData.total_amount, true);
+
+    setReceiptData({
+      type: 'service',
+      title: serviceData.services.title,
+      amount: serviceData.total_amount,
+      date: serviceData.requested_date,
+      time: serviceData.requested_time,
+      id: serviceRequestId
+    });
+
+    setPaymentVerified(true);
+    toast({
+      title: "Payment Successful!",
+      description: "Your service booking has been confirmed. The provider has been notified.",
+    });
+  };
+
+  const updateWalletBalance = async (userId: string, amount: number, isEarning: boolean) => {
+    // Get current wallet or create if doesn't exist
+    const { data: currentWallet } = await supabase
+      .from('user_wallets')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    const currentBalance = currentWallet?.available_balance || 0;
+    const currentEarned = currentWallet?.total_earned || 0;
+    const currentSpent = currentWallet?.total_spent || 0;
+
+    await supabase
+      .from('user_wallets')
+      .upsert({
+        user_id: userId,
+        available_balance: isEarning ? currentBalance + amount : currentBalance - amount,
+        total_earned: isEarning ? currentEarned + amount : currentEarned,
+        total_spent: !isEarning ? currentSpent + amount : currentSpent,
+        updated_at: new Date().toISOString()
+      }, { 
+        onConflict: 'user_id'
+      });
+  };
+
+  const downloadReceipt = () => {
+    if (!receiptData) return;
+    
+    const receiptContent = `
+PAYMENT RECEIPT
+===============
+
+${receiptData.type === 'rental' ? 'ITEM RENTAL' : 'SERVICE BOOKING'}
+${receiptData.title}
+
+Amount Paid: $${receiptData.amount}
+${receiptData.type === 'rental' ? `Rental Period: ${receiptData.dates}` : `Service Date: ${receiptData.date} ${receiptData.time || ''}`}
+Transaction ID: ${receiptData.id}
+
+Thank you for your payment!
+    `;
+
+    const blob = new Blob([receiptContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${receiptData.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -76,18 +235,43 @@ const PaymentSuccess = () => {
         <CardContent className="text-center space-y-6">
           {paymentVerified ? (
             <>
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <Bell className="h-5 w-5 text-green-600 mx-auto mb-2" />
+                <p className="text-green-800 text-sm">
+                  {receiptData?.type === 'rental' 
+                    ? "The lender has been notified and will prepare your item for delivery."
+                    : "The service provider has been notified about your booking."
+                  }
+                </p>
+              </div>
+              
               <p className="text-gray-600">
-                Your rental payment has been processed successfully. 
-                You can now chat with the lender to coordinate pickup details.
+                {receiptData?.type === 'rental'
+                  ? "Your rental payment has been processed successfully. You can now chat with the lender to coordinate pickup details."
+                  : "Your service booking has been confirmed. The provider will contact you soon to schedule the service."
+                }
               </p>
+
               <div className="space-y-3">
+                {receiptData && (
+                  <Button 
+                    onClick={downloadReceipt}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Receipt
+                  </Button>
+                )}
+                
                 <Button 
-                  onClick={() => navigate(`/request/${requestId}`)}
+                  onClick={() => navigate(receiptData?.type === 'rental' ? `/request/${requestId}` : '/dashboard')}
                   className="w-full"
                 >
-                  View Request Details
+                  {receiptData?.type === 'rental' ? 'View Request Details' : 'View Service Details'}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
+                
                 <Button 
                   onClick={() => navigate('/dashboard')}
                   variant="outline"
