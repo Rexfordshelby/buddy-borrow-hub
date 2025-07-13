@@ -81,12 +81,12 @@ const AddService = () => {
           description: data.description,
           category: data.category,
           price: parseFloat(data.price),
-          pricing_type: data.pricingType,
+          price_type: data.pricingType,
           location: data.location,
           availability: data.availability,
           provider_id: user.id,
           tags: tags,
-          status: 'active'
+          is_active: true
         });
 
       if (error) throw error;

@@ -7,6 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, MapPin, Star, Clock, Wrench, Car, Home, Utensils, Scissors, Camera } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Tables } from '@/integrations/supabase/types';
+
+type Service = Tables<'services'>;
 
 const serviceCategories = [
   { id: 'home', name: 'Home Services', icon: Home, color: 'bg-blue-100 text-blue-800' },
@@ -17,93 +22,70 @@ const serviceCategories = [
   { id: 'repair', name: 'Repair & Maintenance', icon: Wrench, color: 'bg-red-100 text-red-800' },
 ];
 
-const sampleServices = [
-  {
-    id: '1',
-    title: 'Professional House Cleaning',
-    description: 'Deep cleaning service for homes and apartments. Eco-friendly products used.',
-    category: 'home',
-    provider: 'Sarah Johnson',
-    rating: 4.8,
-    reviews: 124,
-    price: 50,
-    priceType: 'per_visit',
-    location: 'New York, NY',
-    availability: 'Available today',
-    tags: ['Deep Cleaning', 'Eco-friendly', 'Same Day'],
-    image: '/placeholder.svg'
-  },
-  {
-    id: '2',
-    title: 'Mobile Car Detailing',
-    description: 'Complete car wash and detailing service at your location.',
-    category: 'automotive',
-    provider: 'Mike\'s Auto Care',
-    rating: 4.9,
-    reviews: 89,
-    price: 80,
-    priceType: 'per_service',
-    location: 'Los Angeles, CA',
-    availability: 'Next available: Tomorrow',
-    tags: ['Mobile Service', 'Premium', 'Wax Included'],
-    image: '/placeholder.svg'
-  },
-  {
-    id: '3',
-    title: 'Private Chef Service',
-    description: 'Personal chef for dinner parties, meal prep, and special occasions.',
-    category: 'food',
-    provider: 'Chef Maria Rodriguez',
-    rating: 5.0,
-    reviews: 67,
-    price: 120,
-    priceType: 'per_hour',
-    location: 'Chicago, IL',
-    availability: 'Book 2 days ahead',
-    tags: ['Fine Dining', 'Meal Prep', 'Special Diets'],
-    image: '/placeholder.svg'
-  },
-  {
-    id: '4',
-    title: 'Plumbing Repair Service',
-    description: 'Emergency and scheduled plumbing repairs, installations, and maintenance.',
-    category: 'repair',
-    provider: 'QuickFix Plumbing',
-    rating: 4.7,
-    reviews: 203,
-    price: 75,
-    priceType: 'per_hour',
-    location: 'Houston, TX',
-    availability: '24/7 Emergency',
-    tags: ['Emergency', '24/7', 'Licensed'],
-    image: '/placeholder.svg'
-  }
-];
-
 const Services = () => {
   const navigate = useNavigate();
-  const [services, setServices] = useState(sampleServices);
+  const { toast } = useToast();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('rating');
 
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      toast({
+        title: "Error loading services",
+        description: "Failed to load services. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredServices = services.filter(service => {
     const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         service.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
     switch (sortBy) {
       case 'price_low':
-        return a.price - b.price;
+        return Number(a.price) - Number(b.price);
       case 'price_high':
-        return b.price - a.price;
+        return Number(b.price) - Number(a.price);
       case 'rating':
-        return b.rating - a.rating;
+        return Number(b.rating) - Number(a.rating);
       default:
         return 0;
     }
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-trust-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading services...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -172,74 +154,84 @@ const Services = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
-            <Card key={service.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-              <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
-                <img 
-                  src={service.image} 
-                  alt={service.title}
-                  className="w-full h-full object-cover rounded-t-lg"
-                />
-              </div>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg line-clamp-2 flex-1">{service.title}</CardTitle>
-                  <Badge variant="outline" className="ml-2">
-                    {serviceCategories.find(cat => cat.id === service.category)?.name}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="ml-1 text-sm font-medium">{service.rating}</span>
-                    <span className="text-sm text-gray-500">({service.reviews})</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {service.location}
+        {filteredServices.length === 0 ? (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No services found</h3>
+            <p className="text-gray-600 mb-6">Be the first to list a service in this category!</p>
+            <Button onClick={() => navigate('/add-service')}>
+              List Your Service
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.map((service) => (
+              <Card key={service.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+                <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
+                  <div className="text-gray-500 text-center">
+                    <Camera className="h-12 w-12 mx-auto mb-2" />
+                    <p className="text-sm">Service Image</p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-                  {service.description}
-                </p>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <span className="text-2xl font-bold text-trust-600">
-                      ${service.price}
-                    </span>
-                    <span className="text-sm text-gray-500">/{service.priceType.replace('_', ' ')}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-green-600">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {service.availability}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {service.tags.slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg line-clamp-2 flex-1">{service.title}</CardTitle>
+                    <Badge variant="outline" className="ml-2">
+                      {serviceCategories.find(cat => cat.id === service.category)?.name}
                     </Badge>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 mb-3">by {service.provider}</p>
-                <div className="flex gap-2">
-                  <Button 
-                    className="flex-1" 
-                    onClick={() => navigate(`/service/${service.id}`)}
-                  >
-                    Book Now
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Chat
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="ml-1 text-sm font-medium">{Number(service.rating).toFixed(1)}</span>
+                      <span className="text-sm text-gray-500">({service.total_reviews})</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      {service.location || 'Location not specified'}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                    {service.description}
+                  </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-2xl font-bold text-trust-600">
+                        ${Number(service.price).toFixed(2)}
+                      </span>
+                      <span className="text-sm text-gray-500">/{service.price_type.replace('_', ' ')}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-green-600">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {service.availability || 'Available'}
+                    </div>
+                  </div>
+                  {service.tags && service.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {service.tags.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => navigate(`/service/${service.id}`)}
+                    >
+                      Book Now
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Chat
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* CTA Section */}
         <div className="mt-12 text-center">

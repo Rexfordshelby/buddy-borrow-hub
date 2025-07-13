@@ -375,6 +375,205 @@ export type Database = {
           },
         ]
       }
+      service_requests: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          message: string | null
+          payment_method: string | null
+          payment_session_id: string | null
+          payment_status: string | null
+          provider_id: string
+          requested_date: string | null
+          requested_time: string | null
+          service_id: string
+          status: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          message?: string | null
+          payment_method?: string | null
+          payment_session_id?: string | null
+          payment_status?: string | null
+          provider_id: string
+          requested_date?: string | null
+          requested_time?: string | null
+          service_id: string
+          status?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          message?: string | null
+          payment_method?: string | null
+          payment_session_id?: string | null
+          payment_status?: string | null
+          provider_id?: string
+          requested_date?: string | null
+          requested_time?: string | null
+          service_id?: string
+          status?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          availability: string | null
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          location: string | null
+          price: number
+          price_type: string
+          provider_id: string
+          rating: number | null
+          tags: string[] | null
+          title: string
+          total_reviews: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          availability?: string | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location?: string | null
+          price: number
+          price_type?: string
+          provider_id: string
+          rating?: number | null
+          tags?: string[] | null
+          title: string
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          availability?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          location?: string | null
+          price?: number
+          price_type?: string
+          provider_id?: string
+          rating?: number | null
+          tags?: string[] | null
+          title?: string
+          total_reviews?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_wallets: {
+        Row: {
+          available_balance: number | null
+          created_at: string | null
+          id: string
+          pending_balance: number | null
+          total_earned: number | null
+          total_spent: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number | null
+          created_at?: string | null
+          id?: string
+          pending_balance?: number | null
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          available_balance?: number | null
+          created_at?: string | null
+          id?: string
+          pending_balance?: number | null
+          total_earned?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          from_user_id: string | null
+          id: string
+          related_request_id: string | null
+          related_service_id: string | null
+          status: string | null
+          to_user_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description: string
+          from_user_id?: string | null
+          id?: string
+          related_request_id?: string | null
+          related_service_id?: string | null
+          status?: string | null
+          to_user_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          from_user_id?: string | null
+          id?: string
+          related_request_id?: string | null
+          related_service_id?: string | null
+          status?: string | null
+          to_user_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_related_service_id_fkey"
+            columns: ["related_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

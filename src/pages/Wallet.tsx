@@ -6,50 +6,88 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet as WalletIcon, CreditCard, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Tables } from '@/integrations/supabase/types';
+
+type WalletData = Tables<'user_wallets'>;
+type Transaction = Tables<'wallet_transactions'>;
 
 const Wallet = () => {
   const { user } = useAuth();
-  const [balance, setBalance] = useState(250.75);
-  const [pendingEarnings, setPendingEarnings] = useState(120.50);
+  const { toast } = useToast();
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const transactions = [
-    {
-      id: '1',
-      type: 'payment_received',
-      amount: 45.00,
-      description: 'Payment for Camera Rental',
-      date: '2024-01-15',
-      status: 'completed',
-      from: 'John Doe'
-    },
-    {
-      id: '2',
-      type: 'payment_sent',
-      amount: -25.00,
-      description: 'Drill Rental Payment',
-      date: '2024-01-14',
-      status: 'completed',
-      to: 'Mike Wilson'
-    },
-    {
-      id: '3',
-      type: 'service_payment',
-      amount: 120.00,
-      description: 'House Cleaning Service',
-      date: '2024-01-13',
-      status: 'pending',
-      from: 'Sarah Johnson'
-    },
-    {
-      id: '4',
-      type: 'withdrawal',
-      amount: -100.00,
-      description: 'Bank Transfer',
-      date: '2024-01-12',
-      status: 'completed',
-      to: 'Bank Account ***1234'
+  useEffect(() => {
+    if (user) {
+      fetchWalletData();
+      fetchTransactions();
     }
-  ];
+  }, [user]);
+
+  const fetchWalletData = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_wallets')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (!data) {
+        // Create wallet if it doesn't exist
+        const { data: newWallet, error: createError } = await supabase
+          .from('user_wallets')
+          .insert({ user_id: user.id })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setWallet(newWallet);
+      } else {
+        setWallet(data);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet:', error);
+      toast({
+        title: "Error loading wallet",
+        description: "Failed to load wallet data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchTransactions = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({
+        title: "Error loading transactions",
+        description: "Failed to load transaction history. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -77,6 +115,37 @@ const Wallet = () => {
     }
   };
 
+  const formatTransactionType = (type: string) => {
+    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="text-center p-8">
+            <h2 className="text-xl font-semibold mb-4">Authentication Required</h2>
+            <p className="text-gray-600 mb-6">Please sign in to access your wallet.</p>
+            <Button onClick={() => window.location.href = '/auth'} className="w-full">
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-trust-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading wallet...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -95,7 +164,9 @@ const Wallet = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-4">${balance.toFixed(2)}</div>
+              <div className="text-3xl font-bold mb-4">
+                ${wallet ? Number(wallet.available_balance).toFixed(2) : '0.00'}
+              </div>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm">
                   Add Funds
@@ -115,7 +186,9 @@ const Wallet = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-4 text-yellow-600">${pendingEarnings.toFixed(2)}</div>
+              <div className="text-3xl font-bold mb-4 text-yellow-600">
+                ${wallet ? Number(wallet.pending_balance).toFixed(2) : '0.00'}
+              </div>
               <p className="text-sm text-gray-600">
                 Earnings from completed services that will be available after the hold period.
               </p>
@@ -137,39 +210,51 @@ const Wallet = () => {
                 <CardTitle>Recent Transactions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {transactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        {getTransactionIcon(transaction.type)}
-                        <div>
-                          <p className="font-medium">{transaction.description}</p>
-                          <p className="text-sm text-gray-600">
-                            {transaction.from && `From: ${transaction.from}`}
-                            {transaction.to && `To: ${transaction.to}`}
-                          </p>
-                          <p className="text-xs text-gray-500">{transaction.date}</p>
+                {transactions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No transactions yet</p>
+                    <p className="text-sm text-gray-400">Your transaction history will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {transactions.map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          {getTransactionIcon(transaction.type)}
+                          <div>
+                            <p className="font-medium">{transaction.description}</p>
+                            <p className="text-sm text-gray-600">
+                              Type: {formatTransactionType(transaction.type)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(transaction.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <p className={`font-semibold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
-                          </p>
-                          <div className="flex items-center">
-                            {getStatusIcon(transaction.status)}
-                            <Badge 
-                              variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                              className="ml-1"
-                            >
-                              {transaction.status}
-                            </Badge>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <p className={`font-semibold ${
+                              transaction.type.includes('received') || transaction.type.includes('payment') 
+                                ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transaction.type.includes('received') || transaction.type.includes('payment') ? '+' : ''}
+                              ${Math.abs(Number(transaction.amount)).toFixed(2)}
+                            </p>
+                            <div className="flex items-center">
+                              {getStatusIcon(transaction.status || 'completed')}
+                              <Badge 
+                                variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                                className="ml-1"
+                              >
+                                {transaction.status || 'completed'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -181,19 +266,13 @@ const Wallet = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <CreditCard className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <p className="font-medium">Visa ending in 1234</p>
-                        <p className="text-sm text-gray-600">Expires 12/25</p>
-                      </div>
-                    </div>
-                    <Badge>Primary</Badge>
+                  <div className="text-center py-8">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500 mb-4">No payment methods added yet</p>
+                    <Button variant="outline" className="w-full">
+                      Add Payment Method
+                    </Button>
                   </div>
-                  <Button variant="outline" className="w-full">
-                    Add Payment Method
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -207,34 +286,22 @@ const Wallet = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">$1,245.50</p>
-                    <p className="text-sm text-gray-600">This Month</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${wallet ? Number(wallet.total_earned).toFixed(2) : '0.00'}
+                    </p>
+                    <p className="text-sm text-gray-600">Total Earned</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">$3,567.25</p>
-                    <p className="text-sm text-gray-600">Last 3 Months</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      ${wallet ? Number(wallet.total_spent).toFixed(2) : '0.00'}
+                    </p>
+                    <p className="text-sm text-gray-600">Total Spent</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">$8,945.75</p>
-                    <p className="text-sm text-gray-600">All Time</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Earnings Breakdown</h4>
-                  <div className="flex justify-between">
-                    <span>Item Rentals</span>
-                    <span className="font-medium">$745.50</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Service Payments</span>
-                    <span className="font-medium">$500.00</span>
-                  </div>
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between font-semibold">
-                      <span>Total This Month</span>
-                      <span>$1,245.50</span>
-                    </div>
+                    <p className="text-2xl font-bold text-purple-600">
+                      ${wallet ? (Number(wallet.available_balance) + Number(wallet.pending_balance)).toFixed(2) : '0.00'}
+                    </p>
+                    <p className="text-sm text-gray-600">Total Balance</p>
                   </div>
                 </div>
               </CardContent>
