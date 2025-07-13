@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Wallet as WalletIcon, CreditCard, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Wallet as WalletIcon, CreditCard, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Plus, Minus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import WithdrawalModal from '@/components/WithdrawalModal';
 import type { Tables } from '@/integrations/supabase/types';
 
 type WalletData = Tables<'user_wallets'>;
@@ -19,6 +20,7 @@ const Wallet = () => {
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [withdrawalModalOpen, setWithdrawalModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,7 +75,7 @@ const Wallet = () => {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) throw error;
       setTransactions(data || []);
@@ -93,6 +95,7 @@ const Wallet = () => {
     switch (type) {
       case 'payment_received':
       case 'service_payment':
+      case 'deposit':
         return <ArrowDownLeft className="h-4 w-4 text-green-600" />;
       case 'payment_sent':
       case 'withdrawal':
@@ -117,6 +120,21 @@ const Wallet = () => {
 
   const formatTransactionType = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getTransactionAmount = (transaction: Transaction) => {
+    const amount = Math.abs(Number(transaction.amount));
+    const isPositive = ['payment_received', 'service_payment', 'deposit'].includes(transaction.type);
+    return {
+      amount,
+      isPositive,
+      sign: isPositive ? '+' : '-'
+    };
+  };
+
+  const handleWithdrawalComplete = () => {
+    fetchWalletData();
+    fetchTransactions();
   };
 
   if (!user) {
@@ -169,9 +187,17 @@ const Wallet = () => {
               </div>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Funds
                 </Button>
-                <Button variant="outline" size="sm" className="text-white border-white hover:bg-white hover:text-trust-600">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-white border-white hover:bg-white hover:text-trust-600"
+                  onClick={() => setWithdrawalModalOpen(true)}
+                  disabled={!wallet || Number(wallet.available_balance) <= 0}
+                >
+                  <Minus className="h-4 w-4 mr-2" />
                   Withdraw
                 </Button>
               </div>
@@ -217,42 +243,43 @@ const Wallet = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {transactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          {getTransactionIcon(transaction.type)}
-                          <div>
-                            <p className="font-medium">{transaction.description}</p>
-                            <p className="text-sm text-gray-600">
-                              Type: {formatTransactionType(transaction.type)}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(transaction.created_at).toLocaleDateString()}
-                            </p>
+                    {transactions.map((transaction) => {
+                      const { amount, isPositive, sign } = getTransactionAmount(transaction);
+                      return (
+                        <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            {getTransactionIcon(transaction.type)}
+                            <div>
+                              <p className="font-medium">{transaction.description}</p>
+                              <p className="text-sm text-gray-600">
+                                Type: {formatTransactionType(transaction.type)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(transaction.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="text-right">
-                            <p className={`font-semibold ${
-                              transaction.type.includes('received') || transaction.type.includes('payment') 
-                                ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {transaction.type.includes('received') || transaction.type.includes('payment') ? '+' : ''}
-                              ${Math.abs(Number(transaction.amount)).toFixed(2)}
-                            </p>
-                            <div className="flex items-center">
-                              {getStatusIcon(transaction.status || 'completed')}
-                              <Badge 
-                                variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                                className="ml-1"
-                              >
-                                {transaction.status || 'completed'}
-                              </Badge>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-right">
+                              <p className={`font-semibold ${
+                                isPositive ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {sign}${amount.toFixed(2)}
+                              </p>
+                              <div className="flex items-center">
+                                {getStatusIcon(transaction.status || 'completed')}
+                                <Badge 
+                                  variant={transaction.status === 'completed' ? 'default' : 'secondary'}
+                                  className="ml-1"
+                                >
+                                  {transaction.status || 'completed'}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -309,6 +336,13 @@ const Wallet = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <WithdrawalModal
+        isOpen={withdrawalModalOpen}
+        onClose={() => setWithdrawalModalOpen(false)}
+        availableBalance={Number(wallet?.available_balance || 0)}
+        onWithdrawalComplete={handleWithdrawalComplete}
+      />
     </div>
   );
 };

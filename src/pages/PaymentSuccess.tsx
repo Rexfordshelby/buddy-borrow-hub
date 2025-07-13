@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,19 +114,25 @@ const PaymentSuccess = () => {
       .eq('payment_session_id', sessionId)
       .select(`
         *,
-        services (title, provider_id),
-        profiles!service_requests_customer_id_fkey (full_name)
+        services (title, provider_id)
       `)
       .single();
 
     if (updateError) throw updateError;
+
+    // Get customer profile for notification
+    const { data: customerProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', serviceData.customer_id)
+      .single();
 
     // Create notification for service provider
     await supabase.from('notifications').insert({
       user_id: serviceData.services.provider_id,
       type: 'service_booking',
       title: 'New Service Booking!',
-      message: `${serviceData.profiles.full_name} has booked your "${serviceData.services.title}" service. Check your dashboard for details.`,
+      message: `${customerProfile?.full_name || 'A customer'} has booked your "${serviceData.services.title}" service. Check your dashboard for details.`,
       request_id: serviceRequestId
     });
 
