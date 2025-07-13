@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { CreditCard, Bank, DollarSign, AlertCircle } from 'lucide-react';
+import { CreditCard, Landmark, DollarSign, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -175,7 +175,7 @@ const WithdrawalModal = ({ isOpen, onClose, availableBalance, onWithdrawalComple
                 onClick={() => setMethod('bank')}
               >
                 <CardContent className="flex flex-col items-center p-4">
-                  <Bank className="h-8 w-8 mb-2 text-gray-600" />
+                  <Landmark className="h-8 w-8 mb-2 text-gray-600" />
                   <span className="text-sm font-medium">Bank Account</span>
                 </CardContent>
               </Card>
