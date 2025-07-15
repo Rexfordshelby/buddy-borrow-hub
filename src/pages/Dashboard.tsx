@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 
 interface BorrowRequest {
   id: string;
@@ -34,6 +35,33 @@ interface UserItem {
   created_at: string;
 }
 
+interface UserService {
+  id: string;
+  title: string;
+  price: number;
+  price_type: string;
+  is_active: boolean;
+  created_at: string;
+  rating: number;
+  total_reviews: number;
+}
+
+interface ServiceRequest {
+  id: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+  requested_date: string | null;
+  requested_time: string | null;
+  services: {
+    title: string;
+    price: number;
+  } | null;
+  profiles: {
+    full_name: string;
+  } | null;
+}
+
 interface Notification {
   id: string;
   title: string;
@@ -46,9 +74,12 @@ interface Notification {
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([]);
   const [lendRequests, setLendRequests] = useState<BorrowRequest[]>([]);
   const [userItems, setUserItems] = useState<UserItem[]>([]);
+  const [userServices, setUserServices] = useState<UserService[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,6 +123,24 @@ const Dashboard = () => {
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
 
+    // Fetch user's services
+    const { data: servicesData } = await supabase
+      .from('services')
+      .select('*')
+      .eq('provider_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // Fetch service requests (where user is provider)
+    const { data: serviceRequestsData } = await supabase
+      .from('service_requests')
+      .select(`
+        *,
+        services (title, price),
+        profiles!service_requests_customer_id_fkey (full_name)
+      `)
+      .eq('provider_id', user.id)
+      .order('created_at', { ascending: false });
+
     // Fetch notifications
     const { data: notificationsData } = await supabase
       .from('notifications')
@@ -103,6 +152,8 @@ const Dashboard = () => {
     setBorrowRequests(borrowData || []);
     setLendRequests(lendData || []);
     setUserItems(itemsData || []);
+    setUserServices(servicesData || []);
+    setServiceRequests((serviceRequestsData as unknown as ServiceRequest[]) || []);
     setNotifications(notificationsData || []);
     setLoading(false);
   };
@@ -123,6 +174,35 @@ const Dashboard = () => {
 
   const handleRequestClick = (requestId: string) => {
     navigate(`/request/${requestId}`);
+  };
+
+  const handleServiceRequestAction = async (requestId: string, action: 'accept' | 'reject') => {
+    try {
+      const { error } = await supabase
+        .from('service_requests')
+        .update({ 
+          status: action === 'accept' ? 'approved' : 'rejected',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Refresh data
+      fetchDashboardData();
+      
+      toast({
+        title: `Request ${action}ed successfully`,
+        description: `The service request has been ${action}ed.`,
+      });
+    } catch (error) {
+      console.error(`Error ${action}ing request:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to ${action} the request.`,
+        variant: "destructive",
+      });
+    }
   };
 
   if (!user) {
@@ -156,10 +236,11 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="borrowing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="borrowing">My Borrowing</TabsTrigger>
             <TabsTrigger value="lending">My Lending</TabsTrigger>
             <TabsTrigger value="items">My Items</TabsTrigger>
+            <TabsTrigger value="services">My Services</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
           </TabsList>
@@ -303,6 +384,182 @@ const Dashboard = () => {
                           </p>
                           <p className="text-sm text-gray-500 mt-2">
                             Listed {new Date(item.created_at).toLocaleDateString()}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-4">
+            {/* Service Performance Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Services</p>
+                      <p className="text-2xl font-bold">{userServices.length}</p>
+                    </div>
+                    <Settings className="h-8 w-8 text-primary opacity-60" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active Requests</p>
+                      <p className="text-2xl font-bold">{serviceRequests.filter(r => r.status === 'pending').length}</p>
+                    </div>
+                    <Calendar className="h-8 w-8 text-blue-600 opacity-60" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Avg Rating</p>
+                      <p className="text-2xl font-bold">
+                        {userServices.length > 0 
+                          ? (userServices.reduce((acc, s) => acc + Number(s.rating), 0) / userServices.length).toFixed(1)
+                          : '0.0'
+                        }
+                      </p>
+                    </div>
+                    <Star className="h-8 w-8 text-yellow-500 opacity-60" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completed</p>
+                      <p className="text-2xl font-bold">{serviceRequests.filter(r => r.status === 'completed').length}</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-green-600 opacity-60" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Service Requests Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Service Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-16 bg-muted rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : serviceRequests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No service requests yet. <a href="/add-service" className="text-primary hover:underline">Add a service</a> to start receiving requests!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {serviceRequests.map((request) => (
+                      <div 
+                        key={request.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{request.services?.title || 'Service'}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Customer: {request.profiles?.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {request.requested_date ? new Date(request.requested_date).toLocaleDateString() : 'Date TBD'} 
+                            {request.requested_time && ` at ${request.requested_time}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right mr-4">
+                            <Badge className={getStatusColor(request.status)}>
+                              {request.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                            <p className="text-sm font-semibold mt-1">
+                              ${request.total_amount}
+                            </p>
+                          </div>
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleServiceRequestAction(request.id, 'accept')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleServiceRequestAction(request.id, 'reject')}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Deny
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* My Services List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Settings className="h-5 w-5 mr-2" />
+                  My Listed Services
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-32 bg-muted rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : userServices.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No services listed yet. <a href="/add-service" className="text-primary hover:underline">Add your first service</a>!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userServices.map((service) => (
+                      <Card key={service.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold line-clamp-1">{service.title}</h3>
+                            <Badge variant={service.is_active ? "default" : "secondary"}>
+                              {service.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm">{Number(service.rating).toFixed(1)} ({service.total_reviews})</span>
+                          </div>
+                          <p className="text-primary font-semibold">
+                            ${Number(service.price).toFixed(2)}/{service.price_type.replace('_', ' ')}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Listed {new Date(service.created_at).toLocaleDateString()}
                           </p>
                         </CardContent>
                       </Card>

@@ -17,6 +17,7 @@ import RequestDetail from "./pages/RequestDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
+import ServiceDetail from "./pages/ServiceDetail";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/service/:id" element={<ServiceDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-item" element={<AddItem />} />
             <Route path="/add-service" element={<AddService />} />
