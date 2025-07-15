@@ -93,6 +93,100 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message_type: string | null
+          room_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string | null
+          room_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string | null
+          room_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rooms: {
+        Row: {
+          created_at: string | null
+          id: string
+          participant_1: string
+          participant_2: string
+          service_request_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          participant_1: string
+          participant_2: string
+          service_request_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          participant_1?: string
+          participant_2?: string
+          service_request_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_rooms_participant_1_fkey"
+            columns: ["participant_1"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_rooms_participant_2_fkey"
+            columns: ["participant_2"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_rooms_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: true
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           availability: boolean | null
@@ -371,6 +465,114 @@ export type Database = {
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_bookings: {
+        Row: {
+          booking_date: string
+          created_at: string | null
+          customer_id: string
+          end_time: string
+          id: string
+          notes: string | null
+          payment_status: string | null
+          provider_id: string
+          service_id: string
+          start_time: string
+          status: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string | null
+          customer_id: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          provider_id: string
+          service_id: string
+          start_time: string
+          status?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string | null
+          customer_id?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          provider_id?: string
+          service_id?: string
+          start_time?: string
+          status?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_portfolio: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          service_id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          service_id: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          service_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_portfolio_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
