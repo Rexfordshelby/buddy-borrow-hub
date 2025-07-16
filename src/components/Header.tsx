@@ -92,7 +92,14 @@ export const Header = () => {
             >
               Services
             </button>
-            <button className="text-gray-600 hover:text-trust-600 transition-colors">
+            <button 
+              onClick={() => navigate('/about')}
+              className={`transition-colors ${
+                location.pathname === '/about' 
+                  ? 'text-trust-600 font-medium' 
+                  : 'text-gray-600 hover:text-trust-600'
+              }`}
+            >
               About
             </button>
           </nav>
@@ -145,7 +152,11 @@ export const Header = () => {
                       <Package className="mr-2 h-4 w-4" />
                       <span>Wallet</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </DropdownMenuItem>

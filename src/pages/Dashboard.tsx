@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp, Search } from 'lucide-react';
 
 interface BorrowRequest {
   id: string;
@@ -235,15 +235,113 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="borrowing" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="borrowing">My Borrowing</TabsTrigger>
-            <TabsTrigger value="lending">My Lending</TabsTrigger>
-            <TabsTrigger value="items">My Items</TabsTrigger>
-            <TabsTrigger value="services">My Services</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="wallet">Wallet</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 h-auto">
+            <TabsTrigger value="overview" className="text-xs md:text-sm px-2 py-3">Overview</TabsTrigger>
+            <TabsTrigger value="borrowing" className="text-xs md:text-sm px-2 py-3">Borrowing</TabsTrigger>
+            <TabsTrigger value="lending" className="text-xs md:text-sm px-2 py-3">Lending</TabsTrigger>
+            <TabsTrigger value="items" className="text-xs md:text-sm px-2 py-3">My Items</TabsTrigger>
+            <TabsTrigger value="services" className="text-xs md:text-sm px-2 py-3">Services</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm px-2 py-3">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Quick Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-r from-trust-500 to-trust-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-trust-100">Active Requests</p>
+                      <p className="text-3xl font-bold">{borrowRequests.filter(r => r.status === 'active').length}</p>
+                    </div>
+                    <Calendar className="h-8 w-8 text-trust-200" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-r from-success-500 to-success-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-success-100">Items Listed</p>
+                      <p className="text-3xl font-bold">{userItems.length}</p>
+                    </div>
+                    <Package className="h-8 w-8 text-success-200" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-r from-warm-500 to-warm-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-warm-100">Notifications</p>
+                      <p className="text-3xl font-bold">{notifications.filter(n => !n.read).length}</p>
+                    </div>
+                    <Bell className="h-8 w-8 text-warm-200" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100">Total Earnings</p>
+                      <p className="text-3xl font-bold">$0</p>
+                    </div>
+                    <Wallet className="h-8 w-8 text-blue-200" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Borrow Requests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {borrowRequests.slice(0, 3).map((request) => (
+                    <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                      <div>
+                        <p className="font-medium">{request.items.title}</p>
+                        <p className="text-sm text-muted-foreground">{request.profiles.full_name}</p>
+                      </div>
+                      <Badge className={getStatusColor(request.status)}>
+                        {request.status}
+                      </Badge>
+                    </div>
+                  ))}
+                  {borrowRequests.length === 0 && (
+                    <p className="text-muted-foreground py-4">No recent activity</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button onClick={() => navigate('/add-item')} className="w-full justify-start">
+                    <Plus className="h-4 w-4 mr-2" />
+                    List New Item
+                  </Button>
+                  <Button onClick={() => navigate('/add-service')} variant="outline" className="w-full justify-start">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Service
+                  </Button>
+                  <Button onClick={() => navigate('/marketplace')} variant="outline" className="w-full justify-start">
+                    <Search className="h-4 w-4 mr-2" />
+                    Browse Marketplace
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="borrowing" className="space-y-4">
             <Card>
@@ -662,6 +760,44 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Analytics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Analytics charts and trends will be displayed here.</p>
+                  <Button onClick={() => navigate('/analytics')} className="mt-4" variant="outline">
+                    View Detailed Analytics
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Earnings Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">This Month</span>
+                      <span className="font-semibold">$0.00</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Last Month</span>
+                      <span className="font-semibold">$0.00</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Total Earnings</span>
+                      <span className="font-semibold text-lg">$0.00</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

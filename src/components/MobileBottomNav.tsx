@@ -1,30 +1,34 @@
 
-import { Home, Search, Plus, Wallet, User } from 'lucide-react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Home, Search, Plus, Wallet, User, Package, Briefcase } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Package, Briefcase } from 'lucide-react';
 
 export const MobileBottomNav = () => {
-  const [activeTab, setActiveTab] = useState('home');
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  if (!user) return null;
 
   const navItems = [
-    { id: 'home', icon: Home, label: 'Home', path: '/' },
-    { id: 'explore', icon: Search, label: 'Explore', path: '/marketplace' },
+    { id: 'home', icon: Home, label: 'Home', path: '/dashboard' },
+    { id: 'explore', icon: Search, label: 'Browse', path: '/marketplace' },
     { id: 'add', icon: Plus, label: 'Add', path: null }, // Special case for dropdown
     { id: 'wallet', icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { id: 'profile', icon: User, label: 'Profile', path: '/dashboard' },
+    { id: 'profile', icon: User, label: 'Profile', path: '/profile' },
   ];
 
   const handleNavClick = (item: typeof navItems[0]) => {
     if (item.id === 'add') {
-      // Don't set active tab for the add button
       return;
     }
-    setActiveTab(item.id);
     navigate(item.path!);
+  };
+
+  const isActiveTab = (path: string | null) => {
+    if (!path) return false;
+    return location.pathname === path;
   };
 
   return (
@@ -57,13 +61,13 @@ export const MobileBottomNav = () => {
               key={item.id}
               onClick={() => handleNavClick(item)}
               className={`flex flex-col items-center justify-center p-3 min-w-0 flex-1 transition-all duration-300 ${
-                activeTab === item.id
-                  ? 'text-trust-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                isActiveTab(item.path)
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <div className={`p-1 rounded-lg mb-1 transition-all duration-300 ${
-                activeTab === item.id ? 'bg-trust-100' : 'hover:bg-gray-100'
+                isActiveTab(item.path) ? 'bg-primary/10' : 'hover:bg-muted'
               }`}>
                 <item.icon className="h-5 w-5" />
               </div>
