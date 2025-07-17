@@ -12,7 +12,7 @@ import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Clock, DollarSign, Star, Plus, X } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Star, Plus, X, Upload, Image } from 'lucide-react';
 
 const serviceCategories = [
   { id: 'home', name: 'Home Services' },
@@ -37,6 +37,8 @@ const AddService = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [imageUploadLoading, setImageUploadLoading] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -59,6 +61,46 @@ const AddService = () => {
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setImageUploadLoading(true);
+    try {
+      const fileName = `${user.id}/${Date.now()}-${file.name}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('service-portfolio')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('service-portfolio')
+        .getPublicUrl(fileName);
+
+      setUploadedImages(prev => [...prev, publicUrl]);
+      
+      toast({
+        title: "Image uploaded",
+        description: "Your service image has been uploaded successfully.",
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploadLoading(false);
+    }
+  };
+
+  const removeImage = (imageToRemove: string) => {
+    setUploadedImages(prev => prev.filter(image => image !== imageToRemove));
   };
 
   const onSubmit = async (data: any) => {
@@ -86,6 +128,7 @@ const AddService = () => {
           availability: data.availability,
           provider_id: user.id,
           tags: tags,
+          images: uploadedImages,
           is_active: true
         });
 
@@ -282,8 +325,70 @@ const AddService = () => {
                     )}
                   />
 
-                  <div>
-                    <FormLabel>Service Tags (up to 5)</FormLabel>
+                   <div>
+                     <FormLabel>Service Images</FormLabel>
+                     <div className="mt-2">
+                       <div className="flex items-center gap-4 mb-4">
+                         <input
+                           type="file"
+                           accept="image/*"
+                           onChange={handleImageUpload}
+                           className="hidden"
+                           id="image-upload"
+                           disabled={imageUploadLoading}
+                         />
+                         <label htmlFor="image-upload">
+                           <Button
+                             type="button"
+                             variant="outline"
+                             className="cursor-pointer"
+                             disabled={imageUploadLoading}
+                             asChild
+                           >
+                             <span>
+                               {imageUploadLoading ? (
+                                 <>
+                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                                   Uploading...
+                                 </>
+                               ) : (
+                                 <>
+                                   <Upload className="h-4 w-4 mr-2" />
+                                   Upload Image
+                                 </>
+                               )}
+                             </span>
+                           </Button>
+                         </label>
+                       </div>
+                       
+                       {uploadedImages.length > 0 && (
+                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                           {uploadedImages.map((imageUrl, index) => (
+                             <div key={index} className="relative group">
+                               <img
+                                 src={imageUrl}
+                                 alt={`Service image ${index + 1}`}
+                                 className="w-full h-32 object-cover rounded-lg border"
+                               />
+                               <Button
+                                 type="button"
+                                 variant="destructive"
+                                 size="sm"
+                                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                 onClick={() => removeImage(imageUrl)}
+                               >
+                                 <X className="h-3 w-3" />
+                               </Button>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+
+                   <div>
+                     <FormLabel>Service Tags (up to 5)</FormLabel>
                     <div className="flex gap-2 mt-2">
                       <Input
                         placeholder="Add a tag..."

@@ -166,11 +166,21 @@ const Services = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredServices.map((service) => (
               <Card key={service.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
-                  <div className="text-gray-500 text-center">
-                    <Camera className="h-12 w-12 mx-auto mb-2" />
-                    <p className="text-sm">Service Image</p>
-                  </div>
+                <div className="h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                  {service.images && service.images.length > 0 ? (
+                    <img 
+                      src={service.images[0]} 
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Camera className="h-12 w-12 mx-auto mb-2" />
+                        <p className="text-sm">No Image</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
