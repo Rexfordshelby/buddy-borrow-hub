@@ -233,8 +233,15 @@ const Services = () => {
                     >
                       Book Now
                     </Button>
-                    <Button variant="outline" size="sm">
-                      Chat
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/service/${service.id}`);
+                      }}
+                    >
+                      View Details
                     </Button>
                   </div>
                 </CardContent>

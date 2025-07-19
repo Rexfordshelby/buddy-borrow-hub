@@ -89,8 +89,28 @@ const Marketplace = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-trust-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-6 animate-pulse"></div>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="h-10 bg-gray-200 rounded flex-1 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-lg border shadow-sm">
+                <div className="h-48 bg-gray-200 rounded-t-lg animate-pulse"></div>
+                <div className="p-4">
+                  <div className="h-5 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-3 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
