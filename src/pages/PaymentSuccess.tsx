@@ -18,12 +18,13 @@ const PaymentSuccess = () => {
   const sessionId = searchParams.get('session_id');
   const requestId = searchParams.get('request_id');
   const serviceRequestId = searchParams.get('service_request_id');
+  const bookingId = searchParams.get('booking_id');
 
   useEffect(() => {
-    if (sessionId && (requestId || serviceRequestId)) {
+    if (sessionId && (requestId || serviceRequestId || bookingId)) {
       verifyPayment();
     }
-  }, [sessionId, requestId, serviceRequestId]);
+  }, [sessionId, requestId, serviceRequestId, bookingId]);
 
   const verifyPayment = async () => {
     try {
@@ -31,6 +32,8 @@ const PaymentSuccess = () => {
         await handleItemRentalPayment();
       } else if (serviceRequestId) {
         await handleServicePayment();
+      } else if (bookingId) {
+        await handleServiceBookingPayment();
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -167,6 +170,63 @@ const PaymentSuccess = () => {
     });
   };
 
+  const handleServiceBookingPayment = async () => {
+    // Update service booking status
+    const { data: bookingData, error: updateError } = await supabase
+      .from('service_bookings')
+      .update({ 
+        status: 'confirmed',
+        payment_status: 'paid'
+      })
+      .eq('id', bookingId)
+      .select(`
+        *,
+        service:services(title, provider_id),
+        customer:profiles!service_bookings_customer_id_fkey(full_name, email),
+        provider:profiles!service_bookings_provider_id_fkey(full_name, email)
+      `)
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Create notification for service provider
+    await supabase.from('notifications').insert({
+      user_id: bookingData.provider_id,
+      type: 'service_booking_paid',
+      title: 'Payment Received!',
+      message: `${bookingData.customer.full_name} has paid for your "${bookingData.service.title}" service booking on ${bookingData.booking_date}.`,
+    });
+
+    // Create wallet transaction for provider
+    await supabase.from('wallet_transactions').insert({
+      user_id: bookingData.provider_id,
+      type: 'service_payment',
+      amount: bookingData.total_amount,
+      description: `Payment received for "${bookingData.service.title}" service`,
+      from_user_id: bookingData.customer_id,
+      to_user_id: bookingData.provider_id,
+      status: 'completed'
+    });
+
+    // Update provider's wallet balance
+    await updateWalletBalance(bookingData.provider_id, bookingData.total_amount, true);
+
+    setReceiptData({
+      type: 'service_booking',
+      title: bookingData.service.title,
+      amount: bookingData.total_amount,
+      date: bookingData.booking_date,
+      time: `${bookingData.start_time} - ${bookingData.end_time}`,
+      id: bookingId
+    });
+
+    setPaymentVerified(true);
+    toast({
+      title: "Payment Successful!",
+      description: "Your service booking has been confirmed and paid. The provider has been notified.",
+    });
+  };
+
   const updateWalletBalance = async (userId: string, amount: number, isEarning: boolean) => {
     // Get current wallet or create if doesn't exist
     const { data: currentWallet } = await supabase
@@ -272,10 +332,18 @@ Thank you for your payment!
                 )}
                 
                 <Button 
-                  onClick={() => navigate(receiptData?.type === 'rental' ? `/request/${requestId}` : '/dashboard')}
+                  onClick={() => {
+                    if (receiptData?.type === 'rental') {
+                      navigate(`/request/${requestId}`)
+                    } else if (receiptData?.type === 'service_booking') {
+                      navigate('/dashboard')
+                    } else {
+                      navigate('/dashboard')
+                    }
+                  }}
                   className="w-full"
                 >
-                  {receiptData?.type === 'rental' ? 'View Request Details' : 'View Service Details'}
+                  {receiptData?.type === 'rental' ? 'View Request Details' : 'Go to Dashboard'}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
                 

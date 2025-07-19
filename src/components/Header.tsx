@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut, Package, Plus, ArrowLeft, Briefcase } from 'lucide-react';
+import { NotificationCenter } from './NotificationCenter';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Header = () => {
@@ -105,6 +106,7 @@ export const Header = () => {
           </nav>
 
           <div className="flex items-center space-x-4">
+            {user && <NotificationCenter />}
             {user ? (
               <>
                 <Button 

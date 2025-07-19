@@ -130,7 +130,8 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
         return;
       }
 
-      const { error } = await supabase
+      // Create booking first
+      const { data: bookingData, error: bookingError } = await supabase
         .from("service_bookings")
         .insert({
           service_id: service.id,
@@ -140,10 +141,32 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
           start_time: startTime,
           end_time: endTime,
           total_amount: totalAmount,
-          notes
-        });
+          notes,
+          status: 'pending',
+          payment_status: 'pending'
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (bookingError) throw bookingError;
+
+      // Create payment session
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+        'create-service-payment',
+        {
+          body: {
+            bookingId: bookingData.id,
+            amount: totalAmount,
+            currency: 'usd'
+          }
+        }
+      );
+
+      if (paymentError) {
+        // Clean up booking if payment creation fails
+        await supabase.from("service_bookings").delete().eq("id", bookingData.id);
+        throw paymentError;
+      }
 
       // Create notification for provider
       await supabase
@@ -156,9 +179,12 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
         });
 
       toast({
-        title: "Booking Created",
-        description: "Your booking request has been submitted"
+        title: "Redirecting to Payment",
+        description: "Your booking is being processed..."
       });
+
+      // Redirect to Stripe payment
+      window.open(paymentData.url, '_blank');
 
       setIsBookingModalOpen(false);
       setStartTime("");
@@ -169,7 +195,7 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
       console.error("Error creating booking:", error);
       toast({
         title: "Error",
-        description: "Failed to create booking",
+        description: error.message || "Failed to create booking",
         variant: "destructive"
       });
     } finally {

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp, Search } from 'lucide-react';
+import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp, Search, User } from 'lucide-react';
 
 interface BorrowRequest {
   id: string;
@@ -62,6 +62,27 @@ interface ServiceRequest {
   } | null;
 }
 
+interface ServiceBooking {
+  id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  payment_status: string;
+  total_amount: number;
+  notes?: string;
+  created_at: string;
+  service: {
+    title: string;
+  };
+  customer?: {
+    full_name: string;
+  };
+  provider?: {
+    full_name: string;
+  };
+}
+
 interface Notification {
   id: string;
   title: string;
@@ -80,6 +101,8 @@ const Dashboard = () => {
   const [userItems, setUserItems] = useState<UserItem[]>([]);
   const [userServices, setUserServices] = useState<UserService[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [serviceBookings, setServiceBookings] = useState<ServiceBooking[]>([]);
+  const [customerBookings, setCustomerBookings] = useState<ServiceBooking[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -141,6 +164,28 @@ const Dashboard = () => {
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false });
 
+    // Fetch service bookings where user is provider
+    const { data: providerBookingsData } = await supabase
+      .from('service_bookings')
+      .select(`
+        *,
+        service:services(title),
+        customer:profiles!service_bookings_customer_id_fkey(full_name)
+      `)
+      .eq('provider_id', user.id)
+      .order('created_at', { ascending: false });
+
+    // Fetch service bookings where user is customer
+    const { data: customerBookingsData } = await supabase
+      .from('service_bookings')
+      .select(`
+        *,
+        service:services(title),
+        provider:profiles!service_bookings_provider_id_fkey(full_name)
+      `)
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending: false });
+
     // Fetch notifications
     const { data: notificationsData } = await supabase
       .from('notifications')
@@ -154,6 +199,8 @@ const Dashboard = () => {
     setUserItems(itemsData || []);
     setUserServices(servicesData || []);
     setServiceRequests((serviceRequestsData as unknown as ServiceRequest[]) || []);
+    setServiceBookings((providerBookingsData as unknown as ServiceBooking[]) || []);
+    setCustomerBookings((customerBookingsData as unknown as ServiceBooking[]) || []);
     setNotifications(notificationsData || []);
     setLoading(false);
   };
@@ -236,12 +283,13 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 h-auto">
             <TabsTrigger value="overview" className="text-xs md:text-sm px-2 py-3">Overview</TabsTrigger>
             <TabsTrigger value="borrowing" className="text-xs md:text-sm px-2 py-3">Borrowing</TabsTrigger>
             <TabsTrigger value="lending" className="text-xs md:text-sm px-2 py-3">Lending</TabsTrigger>
             <TabsTrigger value="items" className="text-xs md:text-sm px-2 py-3">My Items</TabsTrigger>
             <TabsTrigger value="services" className="text-xs md:text-sm px-2 py-3">Services</TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-3">Bookings</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs md:text-sm px-2 py-3">Analytics</TabsTrigger>
           </TabsList>
 
@@ -661,6 +709,124 @@ const Dashboard = () => {
                           </p>
                         </CardContent>
                       </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bookings" className="space-y-4">
+            {/* Provider Bookings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Service Bookings (As Provider)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : serviceBookings.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No service bookings yet. <a href="/add-service" className="text-trust-600 hover:underline">Add a service</a> to start receiving bookings!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {serviceBookings.map((booking) => (
+                      <div 
+                        key={booking.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{booking.service.title}</h3>
+                          <p className="text-sm text-gray-600">
+                            Customer: {booking.customer?.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(booking.booking_date).toLocaleDateString()} at {booking.start_time} - {booking.end_time}
+                          </p>
+                          {booking.notes && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Notes: {booking.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <Badge className={getStatusColor(booking.status)}>
+                            {booking.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                          <Badge className={`ml-2 ${booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            {booking.payment_status}
+                          </Badge>
+                          <p className="text-sm font-semibold mt-1">
+                            ${booking.total_amount}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Customer Bookings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  My Service Bookings (As Customer)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                ) : customerBookings.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No bookings yet. <a href="/services" className="text-trust-600 hover:underline">Browse services</a> to make your first booking!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {customerBookings.map((booking) => (
+                      <div 
+                        key={booking.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{booking.service.title}</h3>
+                          <p className="text-sm text-gray-600">
+                            Provider: {booking.provider?.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(booking.booking_date).toLocaleDateString()} at {booking.start_time} - {booking.end_time}
+                          </p>
+                          {booking.notes && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Notes: {booking.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <Badge className={getStatusColor(booking.status)}>
+                            {booking.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                          <Badge className={`ml-2 ${booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            {booking.payment_status}
+                          </Badge>
+                          <p className="text-sm font-semibold mt-1">
+                            ${booking.total_amount}
+                          </p>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
