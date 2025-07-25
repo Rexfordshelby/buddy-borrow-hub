@@ -35,6 +35,8 @@ interface Booking {
   status: string;
   total_amount: number;
   notes?: string;
+  payment_session_id?: string;
+  payment_status?: string;
   service: {
     title: string;
   };
@@ -106,6 +108,7 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
         addHours(new Date(`${bookingDate}T${startTime}`), parseInt(duration)),
         "HH:mm"
       );
+      const endTimeFormatted = endTime;
 
       const totalAmount = service.price_type === "per_hour" 
         ? service.price * parseInt(duration)
@@ -139,7 +142,7 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
           provider_id: service.provider_id,
           booking_date: bookingDate,
           start_time: startTime,
-          end_time: endTime,
+          end_time: endTimeFormatted,
           total_amount: totalAmount,
           notes,
           status: 'pending',
@@ -148,7 +151,12 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
         .select()
         .single();
 
-      if (bookingError) throw bookingError;
+      if (bookingError) {
+        console.error("Booking creation error:", bookingError);
+        throw new Error("Failed to create booking");
+      }
+
+      console.log("Booking created successfully:", bookingData);
 
       // Create payment session
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
@@ -162,10 +170,19 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
         }
       );
 
+      console.log("Payment response:", { paymentData, paymentError });
+
       if (paymentError) {
+        console.error("Payment creation error:", paymentError);
         // Clean up booking if payment creation fails
         await supabase.from("service_bookings").delete().eq("id", bookingData.id);
-        throw paymentError;
+        throw new Error(paymentError.message || "Failed to create payment session");
+      }
+
+      if (!paymentData?.url) {
+        console.error("No payment URL received:", paymentData);
+        await supabase.from("service_bookings").delete().eq("id", bookingData.id);
+        throw new Error("Failed to get payment URL");
       }
 
       // Create notification for provider

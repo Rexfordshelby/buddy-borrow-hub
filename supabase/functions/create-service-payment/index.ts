@@ -34,7 +34,7 @@ serve(async (req) => {
     }
 
     // Get booking details
-    const { data: booking } = await supabaseClient
+    const { data: booking, error: bookingError } = await supabaseClient
       .from("service_bookings")
       .select(`
         *,
@@ -44,6 +44,10 @@ serve(async (req) => {
       `)
       .eq("id", bookingId)
       .single();
+
+    if (bookingError) {
+      throw new Error(`Booking error: ${bookingError.message}`);
+    }
 
     if (!booking) {
       throw new Error("Booking not found");
@@ -92,13 +96,17 @@ serve(async (req) => {
     });
 
     // Update booking with payment session
-    await supabaseClient
+    const { error: updateError } = await supabaseClient
       .from("service_bookings")
       .update({ 
         payment_session_id: session.id,
         payment_status: "pending"
       })
       .eq("id", bookingId);
+
+    if (updateError) {
+      throw new Error(`Failed to update booking: ${updateError.message}`);
+    }
 
     return new Response(JSON.stringify({ 
       url: session.url,

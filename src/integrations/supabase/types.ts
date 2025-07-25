@@ -477,6 +477,7 @@ export type Database = {
           end_time: string
           id: string
           notes: string | null
+          payment_session_id: string | null
           payment_status: string | null
           provider_id: string
           service_id: string
@@ -492,6 +493,7 @@ export type Database = {
           end_time: string
           id?: string
           notes?: string | null
+          payment_session_id?: string | null
           payment_status?: string | null
           provider_id: string
           service_id: string
@@ -507,6 +509,7 @@ export type Database = {
           end_time?: string
           id?: string
           notes?: string | null
+          payment_session_id?: string | null
           payment_status?: string | null
           provider_id?: string
           service_id?: string
