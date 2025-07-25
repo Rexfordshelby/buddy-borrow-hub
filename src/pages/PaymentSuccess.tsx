@@ -34,12 +34,28 @@ const PaymentSuccess = () => {
         await handleServicePayment();
       } else if (bookingId) {
         await handleServiceBookingPayment();
+      } else {
+        console.error('No valid payment identifier found:', { sessionId, requestId, serviceRequestId, bookingId });
+        toast({
+          title: "Payment Error",
+          description: "Invalid payment session. Please contact support.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
+      
+      // More specific error messaging
+      let errorMessage = "Please contact support if your payment was charged.";
+      if (error?.message?.includes('No rows returned')) {
+        errorMessage = "Payment session not found. Your payment may have already been processed.";
+      } else if (error?.message?.includes('permission')) {
+        errorMessage = "Permission error. Please try logging in again.";
+      }
+      
       toast({
         title: "Payment Verification Error",
-        description: "Please contact support if your payment was charged.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
