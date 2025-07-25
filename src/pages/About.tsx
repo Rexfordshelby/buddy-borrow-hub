@@ -16,7 +16,7 @@ const About = () => {
       <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-secondary/10">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            About <span className="text-primary">BorrowBuddy</span>
+            About <span className="gradient-text">BorrowPal</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             We're building the future of sharing economy - connecting people who need things 
@@ -121,41 +121,41 @@ const About = () => {
           <h2 className="text-3xl font-bold text-center mb-12">Meet the Team</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <Card>
+            <Card className="card-modern">
               <CardContent className="p-6 text-center">
-                <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">JD</span>
+                <div className="w-24 h-24 gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center shadow-glow">
+                  <span className="text-white text-2xl font-bold">RS</span>
                 </div>
-                <h3 className="font-semibold mb-1">John Doe</h3>
+                <h3 className="font-semibold mb-1">Raashif Shaikh</h3>
                 <p className="text-sm text-muted-foreground mb-3">CEO & Founder</p>
                 <p className="text-sm">
-                  Passionate about building sustainable communities and leveraging technology for social good.
+                  Visionary entrepreneur passionate about building sustainable communities and revolutionizing the sharing economy through innovative technology.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-modern">
               <CardContent className="p-6 text-center">
-                <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">JS</span>
+                <div className="w-24 h-24 gradient-secondary rounded-full mx-auto mb-4 flex items-center justify-center shadow-elegant">
+                  <span className="text-white text-2xl font-bold">MB</span>
                 </div>
-                <h3 className="font-semibold mb-1">Jane Smith</h3>
-                <p className="text-sm text-muted-foreground mb-3">CTO</p>
+                <h3 className="font-semibold mb-1">Maham Baig</h3>
+                <p className="text-sm text-muted-foreground mb-3">Creative Director</p>
                 <p className="text-sm">
-                  Tech leader with 10+ years building scalable platforms and exceptional user experiences.
+                  Creative mastermind behind our stunning visual identity, specializing in video editing and logo design that brings BorrowPal's vision to life.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-modern">
               <CardContent className="p-6 text-center">
-                <div className="w-24 h-24 bg-gradient-to-r from-orange-500 to-red-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">MJ</span>
+                <div className="w-24 h-24 gradient-accent rounded-full mx-auto mb-4 flex items-center justify-center shadow-button">
+                  <span className="text-white text-2xl font-bold">L</span>
                 </div>
-                <h3 className="font-semibold mb-1">Mike Johnson</h3>
-                <p className="text-sm text-muted-foreground mb-3">Head of Community</p>
+                <h3 className="font-semibold mb-1">Lovable.dev</h3>
+                <p className="text-sm text-muted-foreground mb-3">Development Partner</p>
                 <p className="text-sm">
-                  Community builder focused on creating safe, inclusive spaces for sharing and collaboration.
+                  Our innovative development platform that enabled rapid creation of BorrowPal's modern, scalable web application with cutting-edge technology.
                 </p>
               </CardContent>
             </Card>
