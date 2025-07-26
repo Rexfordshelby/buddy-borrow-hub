@@ -149,7 +149,7 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
           payment_status: 'pending'
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (bookingError) {
         console.error("Booking creation error:", bookingError);

@@ -55,6 +55,20 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 266 85% 58%;
+
+    /* Trust colors */
+    --trust-50: 266 85% 97%;
+    --trust-100: 266 85% 94%;
+    --trust-200: 266 85% 88%;
+    --trust-300: 266 85% 82%;
+    --trust-600: 266 85% 58%;
+    --trust-700: 266 85% 45%;
+    --trust-900: 266 85% 25%;
+
+    /* Warm colors */
+    --warm-200: 25 95% 88%;
+    --warm-300: 25 95% 82%;
+    --warm-500: 25 95% 53%;
   }
 
   .dark {
@@ -85,6 +99,20 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 266 85% 58%;
+
+    /* Trust colors for dark mode */
+    --trust-50: 266 85% 8%;
+    --trust-100: 266 85% 12%;
+    --trust-200: 266 85% 18%;
+    --trust-300: 266 85% 24%;
+    --trust-600: 266 85% 58%;
+    --trust-700: 266 85% 65%;
+    --trust-900: 266 85% 80%;
+
+    /* Warm colors for dark mode */
+    --warm-200: 25 95% 18%;
+    --warm-300: 25 95% 24%;
+    --warm-500: 25 95% 53%;
   }
 }
 
@@ -111,7 +139,7 @@
 @layer utilities {
   /* Glass Effects */
   .glass-card {
-    @apply bg-white/10 backdrop-blur-sm border border-white/20;
+    @apply bg-card/10 backdrop-blur-sm border border-border/20;
   }
   
   .glass-effect {
@@ -157,6 +185,37 @@
   .gradient-border > * {
     background: hsl(var(--background));
     border-radius: calc(var(--radius) - 1px);
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* Shadows */

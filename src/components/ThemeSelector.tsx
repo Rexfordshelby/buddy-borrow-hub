@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
 import { Palette, Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTheme } from 'next-themes';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const ThemeSelector = () => {
-  const [theme, setTheme] = useState('light');
+  const { theme, setTheme } = useTheme();
 
   const themes = [
     { id: 'light', name: 'Light', icon: Sun },
