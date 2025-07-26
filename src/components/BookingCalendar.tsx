@@ -153,7 +153,11 @@ export function BookingCalendar({ service, isProvider = false }: BookingCalendar
 
       if (bookingError) {
         console.error("Booking creation error:", bookingError);
-        throw new Error("Failed to create booking");
+        throw new Error(`Failed to create booking: ${bookingError.message}`);
+      }
+
+      if (!bookingData) {
+        throw new Error("Booking was not created successfully");
       }
 
       console.log("Booking created successfully:", bookingData);

@@ -431,9 +431,16 @@ const AddService = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-1"
+                      className="flex-1 gradient-primary"
                     >
-                      {isSubmitting ? "Listing..." : "List Service"}
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Listing Service...
+                        </div>
+                      ) : (
+                        "🚀 List My Service"
+                      )}
                     </Button>
                   </div>
                 </form>

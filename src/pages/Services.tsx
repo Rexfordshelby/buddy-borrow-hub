@@ -155,12 +155,17 @@ const Services = () => {
 
         {/* Services Grid */}
         {filteredServices.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No services found</h3>
-            <p className="text-gray-600 mb-6">Be the first to list a service in this category!</p>
-            <Button onClick={() => navigate('/add-service')}>
-              List Your Service
-            </Button>
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                <Utensils className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No services found</h3>
+              <p className="text-gray-600 mb-6">Be the first to list a service in this category and start earning!</p>
+              <Button onClick={() => navigate('/add-service')} className="gradient-primary">
+                🚀 List Your Service
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -252,13 +257,27 @@ const Services = () => {
 
         {/* CTA Section */}
         <div className="mt-12 text-center">
-          <Card className="bg-trust-600 text-white">
+          <Card className="glass-effect border-0 shadow-elegant">
             <CardContent className="p-8">
-              <h3 className="text-2xl font-bold mb-4">Offer Your Services</h3>
-              <p className="mb-6">Join our marketplace and start earning by offering your professional services</p>
-              <Button variant="secondary" onClick={() => navigate('/add-service')}>
-                Become a Service Provider
-              </Button>
+              <div className="max-w-2xl mx-auto">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-primary rounded-full flex items-center justify-center">
+                  <Star className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                  Offer Your Services
+                </h3>
+                <p className="text-lg text-muted-foreground mb-8">
+                  Join thousands of professionals earning on our marketplace. Share your skills and build your business.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button onClick={() => navigate('/add-service')} className="gradient-primary shadow-glow">
+                    🚀 Become a Service Provider
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('/about')}>
+                    Learn More
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
