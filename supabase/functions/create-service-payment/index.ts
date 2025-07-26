@@ -39,11 +39,11 @@ serve(async (req) => {
       .select(`
         *,
         service:services(title, provider_id),
-        customer:profiles!service_bookings_customer_id_fkey(full_name, email),
-        provider:profiles!service_bookings_provider_id_fkey(full_name, email)
+        customer:profiles!service_bookings_customer_id_fkey(full_name),
+        provider:profiles!service_bookings_provider_id_fkey(full_name)
       `)
       .eq("id", bookingId)
-      .single();
+      .maybeSingle();
 
     if (bookingError) {
       throw new Error(`Booking error: ${bookingError.message}`);
