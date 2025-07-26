@@ -151,54 +151,69 @@ const Marketplace = () => {
         {/* Items Grid */}
         {filteredItems.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg mb-4">No items found</p>
-            <Button onClick={() => navigate('/add-item')}>
-              List Your First Item
-            </Button>
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-primary rounded-full flex items-center justify-center">
+                <Calendar className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 gradient-text">No items found</h3>
+              <p className="text-muted-foreground mb-6">Be the first to list an item in this category and start earning!</p>
+              <Button onClick={() => navigate('/add-item')} className="gradient-primary">
+                🚀 List Your First Item
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => (
-              <Card key={item.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/item/${item.id}`)}>
-                <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
+              <Card key={item.id} className="cursor-pointer hover-lift glass-card shadow-card group" onClick={() => navigate(`/item/${item.id}`)}>
+                <div className="h-48 bg-muted rounded-t-lg overflow-hidden relative">
                   {item.images && item.images.length > 0 ? (
                     <img 
                       src={item.images[0]} 
                       alt={item.title}
-                      className="w-full h-full object-cover rounded-t-lg"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="text-gray-400">No image</div>
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <Calendar className="h-16 w-16" />
+                    </div>
                   )}
-                </div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg line-clamp-2">{item.title}</CardTitle>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-trust-600">
-                      ${item.price_per_day}/day
-                    </span>
-                    <Badge variant="secondary">
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="secondary" className="backdrop-blur-sm bg-background/80">
                       {item.condition.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>
+                </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                    {item.title}
+                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold gradient-text">
+                      ${item.price_per_day}/day
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                  <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
                     {item.description || 'No description available'}
                   </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex items-center">
                       <MapPin className="h-4 w-4 mr-1" />
-                      <span>{item.location || 'Location not specified'}</span>
+                      <span className="truncate">{item.location || 'Location not specified'}</span>
                     </div>
                     <div className="flex items-center">
                       <span>★ {item.profiles.rating.toFixed(1)}</span>
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <Badge variant="outline">
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge variant="outline" className="text-xs">
                       {item.category}
                     </Badge>
+                    <div className="text-xs text-muted-foreground font-medium">
+                      {item.profiles.rating > 0 ? `${item.profiles.rating.toFixed(1)} rating` : 'New user'}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -153,7 +153,7 @@ export const Header = () => {
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-popover/95 backdrop-blur-sm border border-border/50" align="end">
+                  <DropdownMenuContent className="w-56 bg-popover backdrop-blur-sm border border-border/50 shadow-elegant z-50" align="end">
                     <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       <span>Dashboard</span>
@@ -211,7 +211,7 @@ export const Header = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] bg-background/95 backdrop-blur-sm">
+              <SheetContent side="right" className="w-[300px] bg-background backdrop-blur-sm shadow-elegant">
                 <div className="flex flex-col space-y-4 mt-8">
                   {navigationItems.map((item) => (
                     <button

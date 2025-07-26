@@ -118,7 +118,7 @@ const Dashboard = () => {
     setLoading(true);
     
     // Fetch borrow requests (where user is borrower)
-    const { data: borrowData } = await supabase
+    const { data: borrowData, error: borrowError } = await supabase
       .from('borrow_requests')
       .select(`
         *,
@@ -127,9 +127,13 @@ const Dashboard = () => {
       `)
       .eq('borrower_id', user.id)
       .order('created_at', { ascending: false });
+    
+    if (borrowError) {
+      console.error('Error fetching borrow requests:', borrowError);
+    }
 
     // Fetch lend requests (where user is lender)
-    const { data: lendData } = await supabase
+    const { data: lendData, error: lendError } = await supabase
       .from('borrow_requests')
       .select(`
         *,
@@ -138,20 +142,32 @@ const Dashboard = () => {
       `)
       .eq('lender_id', user.id)
       .order('created_at', { ascending: false });
+    
+    if (lendError) {
+      console.error('Error fetching lend requests:', lendError);
+    }
 
     // Fetch user's items
-    const { data: itemsData } = await supabase
+    const { data: itemsData, error: itemsError } = await supabase
       .from('items')
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
+    
+    if (itemsError) {
+      console.error('Error fetching items:', itemsError);
+    }
 
     // Fetch user's services
-    const { data: servicesData } = await supabase
+    const { data: servicesData, error: servicesError } = await supabase
       .from('services')
       .select('*')
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false });
+    
+    if (servicesError) {
+      console.error('Error fetching services:', servicesError);
+    }
 
     // Fetch service requests (where user is provider)
     const { data: serviceRequestsData } = await supabase
@@ -296,50 +312,58 @@ const Dashboard = () => {
           <TabsContent value="overview" className="space-y-6">
             {/* Quick Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-r from-trust-500 to-trust-600 text-white">
+            <Card className="glass-effect shadow-elegant hover-lift">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-trust-100">Active Requests</p>
-                      <p className="text-3xl font-bold">{borrowRequests.filter(r => r.status === 'active').length}</p>
+                      <p className="text-muted-foreground font-medium">Active Requests</p>
+                      <p className="text-3xl font-bold gradient-text">{borrowRequests.filter(r => r.status === 'active').length}</p>
                     </div>
-                    <Calendar className="h-8 w-8 text-trust-200" />
+                    <div className="gradient-primary p-3 rounded-lg">
+                      <Calendar className="h-8 w-8 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-gradient-to-r from-success-500 to-success-600 text-white">
+              <Card className="glass-effect shadow-elegant hover-lift">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-success-100">Items Listed</p>
-                      <p className="text-3xl font-bold">{userItems.length}</p>
+                      <p className="text-muted-foreground font-medium">Items Listed</p>
+                      <p className="text-3xl font-bold gradient-text">{userItems.length}</p>
                     </div>
-                    <Package className="h-8 w-8 text-success-200" />
+                    <div className="gradient-success p-3 rounded-lg">
+                      <Package className="h-8 w-8 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-gradient-to-r from-warm-500 to-warm-600 text-white">
+              <Card className="glass-effect shadow-elegant hover-lift">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-warm-100">Notifications</p>
-                      <p className="text-3xl font-bold">{notifications.filter(n => !n.read).length}</p>
+                      <p className="text-muted-foreground font-medium">Services</p>
+                      <p className="text-3xl font-bold gradient-text">{userServices.length}</p>
                     </div>
-                    <Bell className="h-8 w-8 text-warm-200" />
+                    <div className="gradient-accent p-3 rounded-lg">
+                      <Bell className="h-8 w-8 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+              <Card className="glass-effect shadow-elegant hover-lift">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100">Total Earnings</p>
-                      <p className="text-3xl font-bold">$0</p>
+                      <p className="text-muted-foreground font-medium">Bookings</p>
+                      <p className="text-3xl font-bold gradient-text">{serviceBookings.length + customerBookings.length}</p>
                     </div>
-                    <Wallet className="h-8 w-8 text-blue-200" />
+                    <div className="gradient-secondary p-3 rounded-lg">
+                      <Wallet className="h-8 w-8 text-white" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -347,13 +371,17 @@ const Dashboard = () => {
 
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="glass-effect shadow-card">
                 <CardHeader>
-                  <CardTitle>Recent Borrow Requests</CardTitle>
+                  <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {borrowRequests.slice(0, 3).map((request) => (
-                    <div key={request.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                    <div 
+                      key={request.id} 
+                      className="flex items-center justify-between py-3 border-b last:border-b-0 hover:bg-accent/50 px-2 rounded cursor-pointer"
+                      onClick={() => handleRequestClick(request.id)}
+                    >
                       <div>
                         <p className="font-medium">{request.items.title}</p>
                         <p className="text-sm text-muted-foreground">{request.profiles.full_name}</p>
@@ -364,17 +392,22 @@ const Dashboard = () => {
                     </div>
                   ))}
                   {borrowRequests.length === 0 && (
-                    <p className="text-muted-foreground py-4">No recent activity</p>
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-2">No recent activity</p>
+                      <Button onClick={() => navigate('/marketplace')} variant="outline" size="sm">
+                        Browse Items
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="glass-effect shadow-card">
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button onClick={() => navigate('/add-item')} className="w-full justify-start">
+                  <Button onClick={() => navigate('/add-item')} className="w-full justify-start gradient-primary">
                     <Plus className="h-4 w-4 mr-2" />
                     List New Item
                   </Button>
@@ -385,6 +418,10 @@ const Dashboard = () => {
                   <Button onClick={() => navigate('/marketplace')} variant="outline" className="w-full justify-start">
                     <Search className="h-4 w-4 mr-2" />
                     Browse Marketplace
+                  </Button>
+                  <Button onClick={() => navigate('/services')} variant="outline" className="w-full justify-start">
+                    <User className="h-4 w-4 mr-2" />
+                    Browse Services
                   </Button>
                 </CardContent>
               </Card>

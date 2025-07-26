@@ -67,7 +67,7 @@ const ItemDetail = () => {
           )
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setItem(data);

@@ -89,7 +89,7 @@ const RequestDetail = () => {
           profiles!borrow_requests_borrower_id_fkey (full_name, email)
         `)
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (requestError) throw requestError;
 
