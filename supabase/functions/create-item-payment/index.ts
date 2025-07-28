@@ -13,10 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { bookingId, amount, currency = "usd" } = await req.json();
+    const { requestId, amount, currency = "usd" } = await req.json();
     
-    if (!bookingId || !amount) {
-      throw new Error("Missing required fields: bookingId and amount");
+    if (!requestId || !amount) {
+      throw new Error("Missing required fields: requestId and amount");
     }
 
     const supabaseClient = createClient(
@@ -33,26 +33,28 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    console.log("Getting booking details for ID:", bookingId);
+    console.log("Getting request details for ID:", requestId);
     
-    // Get booking details with proper joins
-    const { data: booking, error: bookingError } = await supabaseClient
-      .from("service_bookings")
+    // Get borrow request details
+    const { data: request, error: requestError } = await supabaseClient
+      .from("borrow_requests")
       .select(`
         *,
-        services!inner(title, provider_id)
+        items!inner(title, owner_id, price_per_day),
+        borrower:profiles!borrow_requests_borrower_id_fkey(full_name),
+        lender:profiles!borrow_requests_lender_id_fkey(full_name)
       `)
-      .eq("id", bookingId)
+      .eq("id", requestId)
       .maybeSingle();
 
-    console.log("Booking query result:", { booking, bookingError });
+    console.log("Request query result:", { request, requestError });
 
-    if (bookingError) {
-      throw new Error(`Booking error: ${bookingError.message}`);
+    if (requestError) {
+      throw new Error(`Request error: ${requestError.message}`);
     }
 
-    if (!booking) {
-      throw new Error("Booking not found");
+    if (!request) {
+      throw new Error("Borrow request not found");
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -70,6 +72,11 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    const daysDuration = Math.ceil(
+      (new Date(request.end_date).getTime() - new Date(request.start_date).getTime()) / 
+      (1000 * 60 * 60 * 24)
+    );
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -79,8 +86,8 @@ serve(async (req) => {
           price_data: {
             currency,
             product_data: {
-              name: `Service: ${booking.services.title}`,
-              description: `Booking for ${booking.booking_date} at ${booking.start_time}`,
+              name: `Rental: ${request.items.title}`,
+              description: `${daysDuration} days from ${request.start_date} to ${request.end_date}`,
             },
             unit_amount: Math.round(amount * 100), // Convert to cents
           },
@@ -88,26 +95,27 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&booking_id=${bookingId}`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&request_id=${requestId}`,
       cancel_url: `${req.headers.get("origin")}/dashboard`,
       metadata: {
-        booking_id: bookingId,
-        provider_id: booking.services.provider_id,
-        customer_id: booking.customer_id,
+        request_id: requestId,
+        borrower_id: request.borrower_id,
+        lender_id: request.lender_id,
+        item_id: request.item_id,
       },
     });
 
-    // Update booking with payment session
+    // Update request with payment session
     const { error: updateError } = await supabaseClient
-      .from("service_bookings")
+      .from("borrow_requests")
       .update({ 
         payment_session_id: session.id,
         payment_status: "pending"
       })
-      .eq("id", bookingId);
+      .eq("id", requestId);
 
     if (updateError) {
-      throw new Error(`Failed to update booking: ${updateError.message}`);
+      throw new Error(`Failed to update request: ${updateError.message}`);
     }
 
     return new Response(JSON.stringify({ 
