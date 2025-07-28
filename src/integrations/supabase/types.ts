@@ -472,14 +472,24 @@ export type Database = {
       service_bookings: {
         Row: {
           booking_date: string
+          cancellation_reason: string | null
+          confirmation_code: string | null
           created_at: string | null
           customer_id: string
+          customer_rating: number | null
+          customer_review: string | null
           end_time: string
           id: string
           notes: string | null
+          order_number: string | null
           payment_session_id: string | null
           payment_status: string | null
           provider_id: string
+          provider_rating: number | null
+          provider_response_at: string | null
+          provider_review: string | null
+          refund_amount: number | null
+          refund_status: string | null
           service_id: string
           start_time: string
           status: string | null
@@ -488,14 +498,24 @@ export type Database = {
         }
         Insert: {
           booking_date: string
+          cancellation_reason?: string | null
+          confirmation_code?: string | null
           created_at?: string | null
           customer_id: string
+          customer_rating?: number | null
+          customer_review?: string | null
           end_time: string
           id?: string
           notes?: string | null
+          order_number?: string | null
           payment_session_id?: string | null
           payment_status?: string | null
           provider_id: string
+          provider_rating?: number | null
+          provider_response_at?: string | null
+          provider_review?: string | null
+          refund_amount?: number | null
+          refund_status?: string | null
           service_id: string
           start_time: string
           status?: string | null
@@ -504,14 +524,24 @@ export type Database = {
         }
         Update: {
           booking_date?: string
+          cancellation_reason?: string | null
+          confirmation_code?: string | null
           created_at?: string | null
           customer_id?: string
+          customer_rating?: number | null
+          customer_review?: string | null
           end_time?: string
           id?: string
           notes?: string | null
+          order_number?: string | null
           payment_session_id?: string | null
           payment_status?: string | null
           provider_id?: string
+          provider_rating?: number | null
+          provider_response_at?: string | null
+          provider_review?: string | null
+          refund_amount?: number | null
+          refund_status?: string | null
           service_id?: string
           start_time?: string
           status?: string | null
@@ -781,10 +811,79 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      booking_details: {
+        Row: {
+          booking_date: string | null
+          cancellation_reason: string | null
+          confirmation_code: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          customer_rating: number | null
+          customer_review: string | null
+          end_time: string | null
+          id: string | null
+          notes: string | null
+          order_number: string | null
+          payment_session_id: string | null
+          payment_status: string | null
+          provider_email: string | null
+          provider_id: string | null
+          provider_name: string | null
+          provider_phone: string | null
+          provider_rating: number | null
+          provider_response_at: string | null
+          provider_review: string | null
+          refund_amount: number | null
+          refund_status: string | null
+          service_category: string | null
+          service_description: string | null
+          service_id: string | null
+          service_location: string | null
+          service_price: number | null
+          service_price_type: string | null
+          service_title: string | null
+          start_time: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      generate_confirmation_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_order_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       item_category:
