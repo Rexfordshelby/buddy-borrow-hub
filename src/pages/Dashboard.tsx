@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp, Search, User } from 'lucide-react';
+import { OrderManagement } from '@/components/OrderManagement';
 
 interface BorrowRequest {
   id: string;
@@ -305,7 +306,8 @@ const Dashboard = () => {
             <TabsTrigger value="lending" className="text-xs md:text-sm px-2 py-3">Lending</TabsTrigger>
             <TabsTrigger value="items" className="text-xs md:text-sm px-2 py-3">My Items</TabsTrigger>
             <TabsTrigger value="services" className="text-xs md:text-sm px-2 py-3">Services</TabsTrigger>
-            <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-3">Bookings</TabsTrigger>
+              <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-3">Bookings</TabsTrigger>
+              <TabsTrigger value="orders" className="text-xs md:text-sm px-2 py-3">Orders</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs md:text-sm px-2 py-3">Analytics</TabsTrigger>
           </TabsList>
 
@@ -963,6 +965,10 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-4">
+            <OrderManagement isProvider={true} />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

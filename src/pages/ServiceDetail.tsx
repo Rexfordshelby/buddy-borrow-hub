@@ -9,7 +9,7 @@ import { Star, MapPin, Clock, Camera, ArrowLeft, MessageSquare, Calendar } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { BookingCalendar } from '@/components/BookingCalendar';
+import { EnhancedBookingCalendar } from '@/components/EnhancedBookingCalendar';
 import { ChatSystem } from '@/components/ChatSystem';
 import { ServicePortfolio } from '@/components/ServicePortfolio';
 import type { Tables } from '@/integrations/supabase/types';
@@ -216,7 +216,7 @@ const ServiceDetail = () => {
                   <DialogHeader>
                     <DialogTitle>Book {service.title}</DialogTitle>
                   </DialogHeader>
-                  <BookingCalendar service={service} />
+                  <EnhancedBookingCalendar service={service} />
                 </DialogContent>
               </Dialog>
 
