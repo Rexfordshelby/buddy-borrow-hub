@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Search, MapPin, Calendar } from 'lucide-react';
+import { Search, MapPin, Calendar, Star } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -17,6 +17,7 @@ interface Item {
   category: string;
   condition: string;
   price_per_day: number;
+  deposit_amount: number;
   location: string;
   images: string[];
   profiles: {
@@ -116,73 +117,125 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Marketplace</h1>
-          
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as Category | 'all')}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold gradient-text mb-4">Marketplace</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Discover amazing items to rent from trusted community members. From tech gear to outdoor equipment, find what you need when you need it.
+          </p>
+        </div>
+
+        {/* Search and Filter Controls */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <Card className="glass-effect shadow-elegant">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search for anything..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-0 bg-background/50"
+                  />
+                </div>
+                <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as Category | 'all')}>
+                  <SelectTrigger className="w-full md:w-48 border-0 bg-background/50">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-muted-foreground">
+            {filteredItems.length === 0 ? "No items found" : `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''} available`}
+          </p>
+          <Button 
+            onClick={() => navigate('/add-item')}
+            variant="outline"
+            className="hover-scale"
+          >
+            List Your Item
+          </Button>
         </div>
 
         {/* Items Grid */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <div className="max-w-md mx-auto">
               <div className="w-20 h-20 mx-auto mb-6 bg-gradient-primary rounded-full flex items-center justify-center">
                 <Calendar className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold mb-4 gradient-text">No items found</h3>
-              <p className="text-muted-foreground mb-6">Be the first to list an item in this category and start earning!</p>
-              <Button onClick={() => navigate('/add-item')} className="gradient-primary">
-                🚀 List Your First Item
-              </Button>
+              <p className="text-muted-foreground mb-6">
+                {searchTerm ? 
+                  `No items match "${searchTerm}". Try a different search term or browse all categories.` :
+                  "Be the first to list an item in this category and start earning!"
+                }
+              </p>
+              <div className="flex gap-3 justify-center">
+                {searchTerm && (
+                  <Button 
+                    onClick={() => setSearchTerm('')}
+                    variant="outline"
+                  >
+                    Clear Search
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => navigate('/add-item')} 
+                  className="gradient-primary"
+                >
+                  🚀 List Your First Item
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => (
-              <Card key={item.id} className="cursor-pointer hover-lift glass-card shadow-card group" onClick={() => navigate(`/item/${item.id}`)}>
+              <Card 
+                key={item.id} 
+                className="cursor-pointer hover-lift glass-card shadow-card group transition-all duration-300 border-0 bg-card/80 backdrop-blur-sm" 
+                onClick={() => navigate(`/item/${item.id}`)}
+              >
                 <div className="h-48 bg-muted rounded-t-lg overflow-hidden relative">
                   {item.images && item.images.length > 0 ? (
                     <img 
                       src={item.images[0]} 
                       alt={item.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/50">
                       <Calendar className="h-16 w-16" />
                     </div>
                   )}
-                  <div className="absolute top-3 right-3">
-                    <Badge variant="secondary" className="backdrop-blur-sm bg-background/80">
+                  <div className="absolute top-3 left-3">
+                    <Badge variant="secondary" className="backdrop-blur-sm bg-white/90 text-black font-medium">
                       {item.condition.replace('_', ' ').toUpperCase()}
                     </Badge>
                   </div>
+                  <div className="absolute top-3 right-3">
+                    <Badge className="backdrop-blur-sm bg-primary/90 text-white">
+                      {item.category}
+                    </Badge>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
@@ -190,36 +243,41 @@ const Marketplace = () => {
                   </CardTitle>
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold gradient-text">
-                      ${item.price_per_day}/day
+                      ${item.price_per_day}
+                      <span className="text-sm font-normal text-muted-foreground">/day</span>
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
+                <CardContent className="pt-0 space-y-3">
+                  <p className="text-muted-foreground text-sm line-clamp-2">
                     {item.description || 'No description available'}
                   </p>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span className="truncate">{item.location || 'Location not specified'}</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-muted-foreground">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span className="truncate text-xs">{item.location || 'Location not specified'}</span>
                     </div>
-                    <div className="flex items-center">
-                      <span>★ {item.profiles.rating.toFixed(1)}</span>
+                    <div className="flex items-center text-amber-500">
+                      <Star className="h-3 w-3 mr-1 fill-current" />
+                      <span className="text-xs font-medium">{item.profiles.rating.toFixed(1)}</span>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <Badge variant="outline" className="text-xs">
-                      {item.category}
-                    </Badge>
-                    <div className="text-xs text-muted-foreground font-medium">
-                      {item.profiles.rating > 0 ? `${item.profiles.rating.toFixed(1)} rating` : 'New user'}
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                    <div className="text-xs text-muted-foreground">
+                      by {item.profiles.full_name}
                     </div>
+                    <Badge variant="outline" className="text-xs">
+                      ${item.deposit_amount} deposit
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+
+        {/* Add some spacing at the bottom */}
+        <div className="h-16" />
       </div>
     </div>
   );
