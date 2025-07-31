@@ -21,6 +21,7 @@ import RequestDetail from "./pages/RequestDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
+import Favorites from "./pages/Favorites";
 import ServiceDetail from "./pages/ServiceDetail";
 import Analytics from "./pages/Analytics";
 import About from "./pages/About";
@@ -52,12 +53,13 @@ const App = () => (
             <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
             <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
             <Route path="/about" element={<About />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <MobileBottomNav />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <MobileBottomNav />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

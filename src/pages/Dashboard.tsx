@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Package, MessageSquare, Wallet, Calendar, Star, Bell, Settings, CheckCircle, XCircle, TrendingUp, Search, User } from 'lucide-react';
 import { OrderManagement } from '@/components/OrderManagement';
+import { ActivityFeed } from '@/components/ActivityFeed';
+import { QuickStats } from '@/components/QuickStats';
 
 interface BorrowRequest {
   id: string;
@@ -300,110 +302,26 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 h-auto">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-9 h-auto">
             <TabsTrigger value="overview" className="text-xs md:text-sm px-2 py-3">Overview</TabsTrigger>
             <TabsTrigger value="borrowing" className="text-xs md:text-sm px-2 py-3">Borrowing</TabsTrigger>
             <TabsTrigger value="lending" className="text-xs md:text-sm px-2 py-3">Lending</TabsTrigger>
             <TabsTrigger value="items" className="text-xs md:text-sm px-2 py-3">My Items</TabsTrigger>
             <TabsTrigger value="services" className="text-xs md:text-sm px-2 py-3">Services</TabsTrigger>
-              <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-3">Bookings</TabsTrigger>
-              <TabsTrigger value="orders" className="text-xs md:text-sm px-2 py-3">Orders</TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs md:text-sm px-2 py-3">Bookings</TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm px-2 py-3">Orders</TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs md:text-sm px-2 py-3">Notifications</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs md:text-sm px-2 py-3">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Quick Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="glass-effect shadow-elegant hover-lift">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground font-medium">Active Requests</p>
-                      <p className="text-3xl font-bold gradient-text">{borrowRequests.filter(r => r.status === 'active').length}</p>
-                    </div>
-                    <div className="gradient-primary p-3 rounded-lg">
-                      <Calendar className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="glass-effect shadow-elegant hover-lift">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground font-medium">Items Listed</p>
-                      <p className="text-3xl font-bold gradient-text">{userItems.length}</p>
-                    </div>
-                    <div className="gradient-success p-3 rounded-lg">
-                      <Package className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="glass-effect shadow-elegant hover-lift">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground font-medium">Services</p>
-                      <p className="text-3xl font-bold gradient-text">{userServices.length}</p>
-                    </div>
-                    <div className="gradient-accent p-3 rounded-lg">
-                      <Bell className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="glass-effect shadow-elegant hover-lift">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground font-medium">Bookings</p>
-                      <p className="text-3xl font-bold gradient-text">{serviceBookings.length + customerBookings.length}</p>
-                    </div>
-                    <div className="gradient-secondary p-3 rounded-lg">
-                      <Wallet className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Enhanced Quick Stats */}
+            <QuickStats />
 
-            {/* Recent Activity */}
+            {/* Enhanced Activity Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="glass-effect shadow-card">
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {borrowRequests.slice(0, 3).map((request) => (
-                    <div 
-                      key={request.id} 
-                      className="flex items-center justify-between py-3 border-b last:border-b-0 hover:bg-accent/50 px-2 rounded cursor-pointer"
-                      onClick={() => handleRequestClick(request.id)}
-                    >
-                      <div>
-                        <p className="font-medium">{request.items.title}</p>
-                        <p className="text-sm text-muted-foreground">{request.profiles.full_name}</p>
-                      </div>
-                      <Badge className={getStatusColor(request.status)}>
-                        {request.status}
-                      </Badge>
-                    </div>
-                  ))}
-                  {borrowRequests.length === 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-2">No recent activity</p>
-                      <Button onClick={() => navigate('/marketplace')} variant="outline" size="sm">
-                        Browse Items
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
+              <ActivityFeed />
+              
               <Card className="glass-effect shadow-card">
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>

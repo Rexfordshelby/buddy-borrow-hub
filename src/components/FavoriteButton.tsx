@@ -29,14 +29,10 @@ export const FavoriteButton = ({ itemId, serviceId, className, size = 'md' }: Fa
     if (!user || (!itemId && !serviceId)) return;
 
     try {
-      const { data } = await supabase
-        .from('user_favorites')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq(itemId ? 'item_id' : 'service_id', itemId || serviceId)
-        .maybeSingle();
-
-      setIsFavorited(!!data);
+      // For now, use localStorage to simulate favorites
+      const favorites = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
+      const favoriteKey = itemId ? `item_${itemId}` : `service_${serviceId}`;
+      setIsFavorited(favorites.includes(favoriteKey));
     } catch (error) {
       console.error('Error checking favorite status:', error);
     }
@@ -59,14 +55,14 @@ export const FavoriteButton = ({ itemId, serviceId, className, size = 'md' }: Fa
 
     setLoading(true);
     try {
+      // For now, use localStorage to simulate favorites
+      const favorites = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
+      const favoriteKey = itemId ? `item_${itemId}` : `service_${serviceId}`;
+      
       if (isFavorited) {
         // Remove from favorites
-        await supabase
-          .from('user_favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq(itemId ? 'item_id' : 'service_id', itemId || serviceId);
-
+        const updatedFavorites = favorites.filter((fav: string) => fav !== favoriteKey);
+        localStorage.setItem(`favorites_${user.id}`, JSON.stringify(updatedFavorites));
         setIsFavorited(false);
         toast({
           title: "Removed from favorites",
@@ -74,14 +70,8 @@ export const FavoriteButton = ({ itemId, serviceId, className, size = 'md' }: Fa
         });
       } else {
         // Add to favorites
-        await supabase
-          .from('user_favorites')
-          .insert({
-            user_id: user.id,
-            item_id: itemId || null,
-            service_id: serviceId || null
-          });
-
+        const updatedFavorites = [...favorites, favoriteKey];
+        localStorage.setItem(`favorites_${user.id}`, JSON.stringify(updatedFavorites));
         setIsFavorited(true);
         toast({
           title: "Added to favorites",
