@@ -70,18 +70,35 @@ const SavedPaymentMethods = () => {
       return;
     }
 
-    // In a real app, you'd save this to your database
-    const mockMethod: PaymentMethod = {
-      id: Date.now().toString(),
-      type: newMethod.type,
-      nickname: newMethod.nickname,
-      last_four: newMethod.type === 'bank' ? newMethod.accountNumber.slice(-4) : newMethod.cardNumber.slice(-4),
-      is_default: paymentMethods.length === 0,
-      bank_name: newMethod.type === 'bank' ? newMethod.bankName : undefined,
-      card_brand: newMethod.type === 'card' ? newMethod.cardBrand : undefined
-    };
+    try {
+      // Note: In production, encrypt sensitive payment data
+      const { data, error } = await supabase
+        .from('user_payment_methods')
+        .insert({
+          user_id: user?.id,
+          type: newMethod.type,
+          nickname: newMethod.nickname,
+          last_four: newMethod.type === 'bank' ? newMethod.accountNumber.slice(-4) : newMethod.cardNumber.slice(-4),
+          is_default: paymentMethods.length === 0,
+          bank_name: newMethod.type === 'bank' ? newMethod.bankName : undefined,
+          card_brand: newMethod.type === 'card' ? newMethod.cardBrand : undefined
+        })
+        .select()
+        .single();
 
-    setPaymentMethods([...paymentMethods, mockMethod]);
+      if (error) throw error;
+      
+      setPaymentMethods([...paymentMethods, data]);
+      await fetchPaymentMethods(); // Refresh the list
+    } catch (error) {
+      console.error('Error adding payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add payment method. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsAddingMethod(false);
     setNewMethod({
       type: 'bank',
