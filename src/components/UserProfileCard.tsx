@@ -46,13 +46,10 @@ export const UserProfileCard = ({ userId, showActions = true, className }: UserP
   const fetchUserProfile = async () => {
     try {
       const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+        .rpc('get_public_profile', { _id: userId });
 
-      if (data) {
-        setProfile(data);
+      if (data && data[0]) {
+        setProfile(data[0]);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);

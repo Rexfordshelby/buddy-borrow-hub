@@ -4,9 +4,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co https://api.stripe.com; frame-src https://js.stripe.com;" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
     <title>BorrowPal - Share, Borrow, Connect</title>
     <meta name="description" content="The modern peer-to-peer sharing platform that connects communities. Share what you have, borrow what you need." />
     <meta name="author" content="BorrowPal" />
+    <meta name="keywords" content="sharing economy, rental marketplace, borrow items, peer-to-peer, community sharing" />
 
     <meta property="og:title" content="BorrowPal - Share, Borrow, Connect" />
     <meta property="og:description" content="The modern peer-to-peer sharing platform that connects communities. Share what you have, borrow what you need." />
@@ -18,6 +25,7 @@
     <meta name="twitter:image" content="/src/assets/borrowpal-logo.png" />
 
     <link rel="icon" type="image/png" href="/src/assets/borrowpal-icon.png" />
+    <link rel="canonical" href="https://borrowpal.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">

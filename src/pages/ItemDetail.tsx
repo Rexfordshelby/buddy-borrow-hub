@@ -199,7 +199,11 @@ const ItemDetail = () => {
       });
 
       // Redirect to payment
-      window.open(paymentData.url, '_blank');
+      const link = document.createElement('a'); 
+      link.href = paymentData.url; 
+      link.target = '_blank'; 
+      link.rel = 'noopener noreferrer'; 
+      link.click();
 
       setIsRequestModalOpen(false);
       navigate("/dashboard");

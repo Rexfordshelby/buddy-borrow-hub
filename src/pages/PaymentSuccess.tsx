@@ -140,11 +140,9 @@ const PaymentSuccess = () => {
     if (updateError) throw updateError;
 
     // Get customer profile for notification
-    const { data: customerProfile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', serviceData.customer_id)
-      .single();
+    const { data: customerProfileData } = await supabase
+      .rpc('get_public_profile', { _id: serviceData.customer_id });
+    const customerProfile = customerProfileData?.[0];
 
     // Create notification for service provider
     await supabase.from('notifications').insert({

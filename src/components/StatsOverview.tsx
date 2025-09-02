@@ -57,18 +57,17 @@ export const StatsOverview = () => {
           .from('items')
           .select('*', { count: 'exact', head: true });
 
-        // Fetch total users (profiles)
-        const { count: usersCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
+        // Fetch platform counts via safe RPC
+        const { data: counts } = await supabase
+          .rpc('get_platform_counts');
 
         // Update stats
         setStats(prev => prev.map(stat => {
           if (stat.title === "Total Items") {
-            return { ...stat, value: itemsCount?.toString() || "0" };
+            return { ...stat, value: (counts?.[0]?.items_count || itemsCount || 0).toString() };
           }
           if (stat.title === "Active Users") {
-            return { ...stat, value: usersCount?.toString() || "0" };
+            return { ...stat, value: (counts?.[0]?.users_count || 0).toString() };
           }
           return stat;
         }));

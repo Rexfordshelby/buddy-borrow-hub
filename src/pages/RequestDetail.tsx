@@ -288,7 +288,11 @@ const RequestDetail = () => {
       if (error) throw error;
 
       if (data.url) {
-        window.open(data.url, '_blank');
+        const link = document.createElement('a'); 
+        link.href = data.url; 
+        link.target = '_blank'; 
+        link.rel = 'noopener noreferrer'; 
+        link.click();
       }
     } catch (error) {
       console.error('Error creating payment:', error);

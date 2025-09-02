@@ -27,7 +27,7 @@ export const Footer = () => {
                 variant="ghost" 
                 size="sm" 
                 className="text-gray-400 hover:text-white p-2"
-                onClick={() => window.open('https://www.instagram.com/_borrowpalofficial_?igsh=d3l3cjZqcHV1b3Vu', '_blank')}
+                onClick={() => { const link = document.createElement('a'); link.href = 'https://www.instagram.com/_borrowpalofficial_?igsh=d3l3cjZqcHV1b3Vu'; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.click(); }}
               >
                 <Instagram className="h-5 w-5" />
               </Button>
