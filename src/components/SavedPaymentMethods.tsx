@@ -88,8 +88,6 @@ const SavedPaymentMethods = () => {
 
       if (error) throw error;
       
-      setPaymentMethods([...paymentMethods, data]);
-      await fetchPaymentMethods(); // Refresh the list
     } catch (error) {
       console.error('Error adding payment method:', error);
       toast({

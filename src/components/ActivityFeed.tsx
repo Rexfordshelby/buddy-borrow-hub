@@ -19,7 +19,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface ActivityItem {
   id: string;
-  type: 'item_listed' | 'service_listed' | 'booking_completed' | 'review_received' | 'payment_received' | 'message_received';
+  type: 'item_listed' | 'service_listed' | 'booking_completed' | 'review_received' | 'payment_received' | 'rental_request' | 'service_booked';
   title: string;
   description: string;
   timestamp: string;
@@ -32,6 +32,7 @@ interface ActivityItem {
     rating?: number;
     itemId?: string;
     serviceId?: string;
+    requestId?: string;
   };
 }
 
@@ -50,61 +51,186 @@ export const ActivityFeed = () => {
     if (!user) return;
 
     try {
-      // Mock activity data - in real app, this would come from various tables
-      const mockActivities: ActivityItem[] = [
-        {
-          id: '1',
-          type: 'item_listed',
-          title: 'New item listed',
-          description: 'Your Canon EOS R5 Camera is now live on the marketplace',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-          metadata: { itemId: '1' }
-        },
-        {
-          id: '2',
-          type: 'booking_completed',
-          title: 'Service completed',
-          description: 'House cleaning service completed successfully',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-          user: {
-            name: 'Sarah Johnson',
-            avatar: undefined
-          },
-          metadata: { amount: 120, serviceId: '1' }
-        },
-        {
-          id: '3',
-          type: 'review_received',
-          title: 'New review received',
-          description: 'John Smith left you a 5-star review',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 hours ago
-          user: {
-            name: 'John Smith',
-            avatar: undefined
-          },
-          metadata: { rating: 5 }
-        },
-        {
-          id: '4',
-          type: 'payment_received',
-          title: 'Payment received',
-          description: 'Payment of $85 for DSLR Camera rental',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-          metadata: { amount: 85 }
-        },
-        {
-          id: '5',
-          type: 'service_listed',
-          title: 'Service updated',
-          description: 'Your Photography Service pricing has been updated',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-          metadata: { serviceId: '2' }
-        }
-      ];
+      setLoading(true);
+      const activities: ActivityItem[] = [];
 
-      setActivities(mockActivities);
+      // Fetch recent items listed by user
+      const { data: recentItems } = await supabase
+        .from('items')
+        .select('id, title, created_at')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (recentItems) {
+        activities.push(...recentItems.map(item => ({
+          id: `item-${item.id}`,
+          type: 'item_listed' as const,
+          title: 'New item listed',
+          description: `Your ${item.title} is now live on the marketplace`,
+          timestamp: item.created_at,
+          metadata: { itemId: item.id }
+        })));
+      }
+
+      // Fetch recent rental requests for user's items
+      const { data: rentalRequests } = await supabase
+        .from('borrow_requests')
+        .select(`
+          id, created_at, status,
+          items!inner(title, owner_id),
+          profiles!borrow_requests_borrower_id_fkey(full_name)
+        `)
+        .eq('items.owner_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (rentalRequests) {
+        activities.push(...rentalRequests.map(request => ({
+          id: `request-${request.id}`,
+          type: 'rental_request' as const,
+          title: 'New rental request',
+          description: `${request.profiles.full_name} wants to rent your ${request.items.title}`,
+          timestamp: request.created_at,
+          user: {
+            name: request.profiles.full_name,
+            avatar: undefined
+          },
+          metadata: { requestId: request.id }
+        })));
+      }
+
+      // Fetch recent service bookings completed
+      const { data: serviceBookings } = await supabase
+        .from('service_bookings')
+        .select(`
+          id, created_at, booking_date, total_amount,
+          services!inner(title, provider_id),
+          customer:profiles!service_bookings_customer_id_fkey(full_name)
+        `)
+        .eq('services.provider_id', user.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (serviceBookings) {
+        activities.push(...serviceBookings.map(booking => ({
+          id: `booking-${booking.id}`,
+          type: 'booking_completed' as const,
+          title: 'Service completed',
+          description: `${booking.services.title} completed successfully`,
+          timestamp: booking.created_at,
+          user: {
+            name: booking.customer.full_name,
+            avatar: undefined
+          },
+          metadata: { amount: booking.total_amount, serviceId: booking.id }
+        })));
+      }
+
+      // Fetch recent reviews received (as reviewee)
+      const { data: reviews } = await supabase
+        .from('reviews')
+        .select(`
+          id, rating, created_at,
+          reviewer:profiles!reviews_reviewer_id_fkey(full_name)
+        `)
+        .eq('reviewee_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (reviews) {
+        activities.push(...reviews.map(review => ({
+          id: `review-${review.id}`,
+          type: 'review_received' as const,
+          title: 'New review received',
+          description: `${review.reviewer.full_name} left you a ${review.rating}-star review`,
+          timestamp: review.created_at,
+          user: {
+            name: review.reviewer.full_name,
+            avatar: undefined
+          },
+          metadata: { rating: review.rating }
+        })));
+      }
+
+      // Fetch recent wallet transactions (payments received)
+      const { data: payments } = await supabase
+        .from('wallet_transactions')
+        .select('id, amount, description, created_at')
+        .eq('user_id', user.id)
+        .eq('type', 'payment_received')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (payments) {
+        activities.push(...payments.map(payment => ({
+          id: `payment-${payment.id}`,
+          type: 'payment_received' as const,
+          title: 'Payment received',
+          description: payment.description || `You received $${payment.amount.toFixed(2)}`,
+          timestamp: payment.created_at,
+          metadata: { amount: payment.amount }
+        })));
+      }
+
+      // Fetch recent services listed by user
+      const { data: recentServices } = await supabase
+        .from('services')
+        .select('id, title, created_at, updated_at')
+        .eq('provider_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(5);
+
+      if (recentServices) {
+        activities.push(...recentServices.map(service => ({
+          id: `service-${service.id}`,
+          type: 'service_listed' as const,
+          title: service.created_at === service.updated_at ? 'Service listed' : 'Service updated',
+          description: `Your ${service.title} ${service.created_at === service.updated_at ? 'is now live' : 'has been updated'}`,
+          timestamp: service.updated_at,
+          metadata: { serviceId: service.id }
+        })));
+      }
+
+      // Fetch recent service bookings for user's services
+      const { data: newBookings } = await supabase
+        .from('service_bookings')
+        .select(`
+          id, created_at, booking_date,
+          services!inner(title, provider_id),
+          customer:profiles!service_bookings_customer_id_fkey(full_name)
+        `)
+        .eq('services.provider_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (newBookings) {
+        activities.push(...newBookings.map(booking => ({
+          id: `new-booking-${booking.id}`,
+          type: 'service_booked' as const,
+          title: 'New service booking',
+          description: `${booking.customer.full_name} booked your ${booking.services.title} for ${new Date(booking.booking_date).toLocaleDateString()}`,
+          timestamp: booking.created_at,
+          user: {
+            name: booking.customer.full_name,
+            avatar: undefined
+          },
+          metadata: { serviceId: booking.id }
+        })));
+      }
+
+      // Sort all activities by timestamp and take the most recent 10
+      const sortedActivities = activities
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 10);
+
+      setActivities(sortedActivities);
     } catch (error) {
       console.error('Error fetching activities:', error);
+      setActivities([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -122,8 +248,10 @@ export const ActivityFeed = () => {
         return <Star className="h-5 w-5 text-yellow-500" />;
       case 'payment_received':
         return <CreditCard className="h-5 w-5 text-purple-500" />;
-      case 'message_received':
+      case 'rental_request':
         return <MessageSquare className="h-5 w-5 text-indigo-500" />;
+      case 'service_booked':
+        return <Briefcase className="h-5 w-5 text-orange-500" />;
       default:
         return <Clock className="h-5 w-5 text-gray-500" />;
     }
@@ -140,6 +268,10 @@ export const ActivityFeed = () => {
         return <Badge className="text-xs bg-yellow-100 text-yellow-800">Review</Badge>;
       case 'payment_received':
         return <Badge className="text-xs bg-purple-100 text-purple-800">Payment</Badge>;
+      case 'rental_request':
+        return <Badge className="text-xs bg-blue-100 text-blue-800">Request</Badge>;
+      case 'service_booked':
+        return <Badge className="text-xs bg-orange-100 text-orange-800">Booking</Badge>;
       default:
         return null;
     }
@@ -175,8 +307,8 @@ export const ActivityFeed = () => {
           <TrendingUp className="h-5 w-5" />
           Recent Activity
         </CardTitle>
-        <Button variant="ghost" size="sm">
-          View All
+        <Button variant="ghost" size="sm" onClick={fetchActivities}>
+          Refresh
         </Button>
       </CardHeader>
       <CardContent>

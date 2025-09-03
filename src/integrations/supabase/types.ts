@@ -765,6 +765,45 @@ export type Database = {
           },
         ]
       }
+      user_payment_methods: {
+        Row: {
+          bank_name: string | null
+          card_brand: string | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          last_four: string
+          nickname: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bank_name?: string | null
+          card_brand?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          last_four: string
+          nickname: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bank_name?: string | null
+          card_brand?: string | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          last_four?: string
+          nickname?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_wallets: {
         Row: {
           available_balance: number | null
