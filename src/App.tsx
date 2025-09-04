@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Marketplace from "./pages/Marketplace";
@@ -28,44 +28,53 @@ import About from "./pages/About";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
-  <ErrorBoundary>
+  <EnhancedErrorBoundary maxRetries={3}>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AuthProvider>
           <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/service/:id" element={<ServiceDetail />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/add-item" element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
-            <Route path="/add-service" element={<ProtectedRoute><AddService /></ProtectedRoute>} />
-            <Route path="/item/:id" element={<ItemDetail />} />
-            <Route path="/request/:id" element={<ProtectedRoute><RequestDetail /></ProtectedRoute>} />
-            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-            <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-            <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-            <Route path="/about" element={<About />} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MobileBottomNav />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/service/:id" element={<ServiceDetail />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/add-item" element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
+                <Route path="/add-service" element={<ProtectedRoute><AddService /></ProtectedRoute>} />
+                <Route path="/item/:id" element={<ItemDetail />} />
+                <Route path="/request/:id" element={<ProtectedRoute><RequestDetail /></ProtectedRoute>} />
+                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+                <Route path="/about" element={<About />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <MobileBottomNav />
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
-  </QueryClientProvider>
-  </ErrorBoundary>
+    </QueryClientProvider>
+  </EnhancedErrorBoundary>
 );
 
 export default App;

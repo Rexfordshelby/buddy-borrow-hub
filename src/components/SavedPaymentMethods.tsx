@@ -38,27 +38,42 @@ const SavedPaymentMethods = () => {
   });
 
   useEffect(() => {
-    // In a real app, this would fetch from your database
-    // For now, we'll use mock data
-    setPaymentMethods([
-      {
-        id: '1',
-        type: 'bank',
-        nickname: 'Main Checking',
-        last_four: '1234',
-        is_default: true,
-        bank_name: 'Chase Bank'
-      },
-      {
-        id: '2',
-        type: 'card',
-        nickname: 'Business Card',
-        last_four: '5678',
-        is_default: false,
-        card_brand: 'Visa'
-      }
-    ]);
-  }, []);
+    fetchPaymentMethods();
+  }, [user]);
+
+  const fetchPaymentMethods = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_payment_methods')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Type-safe mapping of database data to PaymentMethod interface
+      const mappedData: PaymentMethod[] = (data || []).map(item => ({
+        id: item.id,
+        type: item.type as 'bank' | 'card',
+        nickname: item.nickname,
+        last_four: item.last_four,
+        is_default: item.is_default,
+        bank_name: item.bank_name || undefined,
+        card_brand: item.card_brand || undefined,
+      }));
+      
+      setPaymentMethods(mappedData);
+    } catch (error) {
+      console.error('Error fetching payment methods:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load payment methods.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAddMethod = async () => {
     if (!newMethod.nickname) {
@@ -88,6 +103,8 @@ const SavedPaymentMethods = () => {
 
       if (error) throw error;
       
+      // Refresh the payment methods list
+      fetchPaymentMethods();
     } catch (error) {
       console.error('Error adding payment method:', error);
       toast({
@@ -115,18 +132,68 @@ const SavedPaymentMethods = () => {
     });
   };
 
-  const setAsDefault = (id: string) => {
-    setPaymentMethods(methods =>
-      methods.map(method => ({
-        ...method,
-        is_default: method.id === id
-      }))
-    );
+  const setAsDefault = async (id: string) => {
+    if (!user) return;
 
-    toast({
-      title: "Default Payment Method Updated",
-      description: "This payment method is now your default for withdrawals.",
-    });
+    try {
+      // First, remove default from all methods
+      await supabase
+        .from('user_payment_methods')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
+
+      // Then set the selected method as default
+      const { error } = await supabase
+        .from('user_payment_methods')
+        .update({ is_default: true })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the list
+      fetchPaymentMethods();
+
+      toast({
+        title: "Default Payment Method Updated",
+        description: "This payment method is now your default for withdrawals.",
+      });
+    } catch (error) {
+      console.error('Error setting default payment method:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update default payment method.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePaymentMethod = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_payment_methods')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      fetchPaymentMethods();
+
+      toast({
+        title: "Payment Method Deleted",
+        description: "The payment method has been removed.",
+      });
+    } catch (error) {
+      console.error('Error deleting payment method:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to delete payment method.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -289,7 +356,12 @@ const SavedPaymentMethods = () => {
                   <Button size="sm" variant="ghost">
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => deletePaymentMethod(method.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

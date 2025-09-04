@@ -273,11 +273,11 @@ const Dashboard = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-auto card-modern">
           <CardContent className="text-center p-8">
-            <h2 className="text-xl font-semibold mb-4">Please sign in to access your dashboard</h2>
-            <Button onClick={() => navigate('/auth')}>Sign In</Button>
+            <h2 className="text-xl font-semibold mb-4 text-foreground">Please sign in to access your dashboard</h2>
+            <Button onClick={() => navigate('/auth')} className="gradient-primary">Sign In</Button>
           </CardContent>
         </Card>
       </div>
@@ -285,16 +285,16 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Manage your borrowing and lending activities</p>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">Manage your borrowing and lending activities</p>
           </div>
           <Button 
             onClick={() => navigate('/add-item')}
-            className="gradient-primary"
+            className="gradient-primary hover-lift"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Item

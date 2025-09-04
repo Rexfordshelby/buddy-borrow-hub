@@ -263,15 +263,15 @@ export const ActivityFeed = () => {
       case 'service_listed':
         return <Badge variant="outline" className="text-xs">Listed</Badge>;
       case 'booking_completed':
-        return <Badge className="text-xs bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge className="text-xs bg-success/10 text-success-foreground">Completed</Badge>;
       case 'review_received':
-        return <Badge className="text-xs bg-yellow-100 text-yellow-800">Review</Badge>;
+        return <Badge className="text-xs bg-warning/10 text-warning-foreground">Review</Badge>;
       case 'payment_received':
-        return <Badge className="text-xs bg-purple-100 text-purple-800">Payment</Badge>;
+        return <Badge className="text-xs bg-primary/10 text-primary-foreground">Payment</Badge>;
       case 'rental_request':
-        return <Badge className="text-xs bg-blue-100 text-blue-800">Request</Badge>;
+        return <Badge className="text-xs bg-accent/10 text-accent-foreground">Request</Badge>;
       case 'service_booked':
-        return <Badge className="text-xs bg-orange-100 text-orange-800">Booking</Badge>;
+        return <Badge className="text-xs bg-secondary/10 text-secondary-foreground">Booking</Badge>;
       default:
         return null;
     }
@@ -356,7 +356,7 @@ export const ActivityFeed = () => {
                     </p>
                     
                     {activity.metadata?.amount && (
-                      <span className="text-sm font-bold text-green-600">
+                      <span className="text-sm font-bold text-success">
                         +${activity.metadata.amount}
                       </span>
                     )}
