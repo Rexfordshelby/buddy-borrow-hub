@@ -8,7 +8,7 @@ import { NotificationCenter } from './NotificationCenter';
 import { ThemeSelector } from './ThemeSelector';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { useNavigate, useLocation } from 'react-router-dom';
-import borrowpalLogo from '@/assets/borrowpal-logo.png';
+import borrowpalLogo from '@/assets/borrowpal-logo-new.png';
 
 export const Header = () => {
   const { user, signOut } = useAuth();
