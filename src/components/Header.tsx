@@ -1,20 +1,26 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { User, Settings, LogOut, Package, Plus, ArrowLeft, Briefcase, Menu, Palette } from 'lucide-react';
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, User, LogOut, Settings, Heart, BarChart3, Wallet, Plus, Package, Briefcase, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NotificationCenter } from './NotificationCenter';
 import { ThemeSelector } from './ThemeSelector';
-import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
-import { useNavigate, useLocation } from 'react-router-dom';
-import borrowpalLogo from '@/assets/borrowpal-logo-new.png';
+import borrowpalLogo from "@/assets/borrowpal-logo-new.png";
 
 export const Header = () => {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -37,81 +43,98 @@ export const Header = () => {
         return 'Dashboard';
       case '/wallet':
         return 'Wallet';
+      case '/about':
+        return 'About';
+      case '/profile':
+        return 'Profile';
+      case '/settings':
+        return 'Settings';
+      case '/favorites':
+        return 'Favorites';
       default:
         return '';
     }
   };
 
-  const navigationItems = [
-    { name: 'Marketplace', path: '/marketplace' },
-    { name: 'Services', path: '/services' },
-    { name: 'About', path: '/about' },
+  const navItems = [
+    { label: "Home", path: "/", icon: null },
+    { label: "Marketplace", path: "/marketplace", icon: Package },
+    { label: "Services", path: "/services", icon: Briefcase },
+    { label: "About", path: "/about", icon: null },
   ];
+
+  const userNavItems = user ? [
+    { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
+    { label: "Favorites", path: "/favorites", icon: Heart },
+    { label: "Wallet", path: "/wallet", icon: Wallet },
+    { label: "Profile", path: "/profile", icon: User },
+    { label: "Settings", path: "/settings", icon: Settings },
+  ] : [];
+
+  const quickActions = user ? [
+    { label: "List Item", path: "/add-item", icon: Plus, variant: "outline" as const },
+    { label: "Offer Service", path: "/add-service", icon: Plus, variant: "outline" as const },
+  ] : [];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
           {/* Left Section - Back Button & Logo */}
           <div className="flex items-center space-x-4">
             {canGoBack && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/')}
-                className="flex items-center hover-scale"
+                onClick={() => navigate(-1)}
+                className="hover-scale"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
             )}
             
             <div 
-              className="flex items-center space-x-3 cursor-pointer group"
+              className="flex items-center space-x-3 cursor-pointer hover-scale" 
               onClick={() => navigate('/')}
             >
-              <div className="relative">
-                <img 
-                  src={borrowpalLogo} 
-                  alt="BorrowPal" 
-                  className="h-10 w-auto transition-all duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-heading font-bold gradient-text">
-                  BorrowPal
-                </span>
-                {getPageTitle() ? (
-                  <span className="text-sm text-muted-foreground font-medium">
+              <img 
+                src={borrowpalLogo} 
+                alt="BorrowPal" 
+                className="h-10 w-auto object-contain"
+              />
+              {getPageTitle() && (
+                <div className="hidden sm:block border-l border-border/50 pl-3">
+                  <span className="text-lg font-semibold text-foreground">
                     {getPageTitle()}
                   </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground font-medium">
-                    Share • Borrow • Connect
-                  </span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Center Navigation - Desktop */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            {navigationItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => navigate(item.path)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover-scale ${
-                  location.pathname === item.path 
-                    ? 'text-primary bg-primary/10 shadow-button' 
-                    : 'text-foreground/80 hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                {item.name}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.path}
+                  variant={location.pathname === item.path ? "default" : "ghost"}
+                  onClick={() => navigate(item.path)}
+                  className="relative transition-all duration-200 hover-scale"
+                >
+                  {Icon && <Icon className="h-4 w-4 mr-2" />}
+                  {item.label}
+                  {location.pathname === item.path && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+                  )}
+                </Button>
+              );
+            })}
           </nav>
 
-          {/* Right Section - Actions */}
+          {/* Right Section - Actions & Theme */}
           <div className="flex items-center space-x-2">
             {/* Theme Selector */}
             <ThemeSelector />
@@ -121,83 +144,78 @@ export const Header = () => {
 
             {user ? (
               <>
-                {/* Quick Action Buttons - Desktop */}
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/add-item')}
-                  className="hidden lg:flex items-center hover-scale border-primary/20 hover:border-primary/40"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  List Item
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/add-service')}
-                  className="hidden lg:flex items-center hover-scale border-primary/20 hover:border-primary/40"
-                >
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  List Service
-                </Button>
-                
-                {/* User Menu */}
+                {/* Quick Actions - Desktop */}
+                <div className="hidden lg:flex items-center space-x-2">
+                  {quickActions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Button
+                        key={action.path}
+                        variant={action.variant}
+                        size="sm"
+                        onClick={() => navigate(action.path)}
+                        className="hover-scale"
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {action.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                {/* User Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-gradient-primary p-0.5 hover:shadow-glow transition-all duration-300">
-                      <div className="h-full w-full rounded-full bg-background flex items-center justify-center">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-sm font-semibold">
-                            {user.email?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full hover-scale">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src="" alt="User" />
+                        <AvatarFallback className="bg-gradient-primary text-white">
+                          {user.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56 bg-popover backdrop-blur-sm border border-border/50 shadow-elegant z-50" align="end">
-                    <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/add-item')} className="cursor-pointer">
-                      <Package className="mr-2 h-4 w-4" />
-                      <span>List Item</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/add-service')} className="cursor-pointer">
-                      <Briefcase className="mr-2 h-4 w-4" />
-                      <span>List Service</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/wallet')} className="cursor-pointer">
-                      <Palette className="mr-2 h-4 w-4" />
-                      <span>Wallet</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
+                  <DropdownMenuContent className="w-56 glass-effect" align="end">
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        <p className="font-medium truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">Manage your account</p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    {userNavItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <DropdownMenuItem
+                          key={item.path}
+                          onClick={() => navigate(item.path)}
+                          className="cursor-pointer"
+                        >
+                          <Icon className="h-4 w-4 mr-2" />
+                          {item.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign Out</span>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
             ) : (
-              /* Guest Actions */
               <div className="hidden md:flex items-center space-x-2">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={() => navigate('/auth')}
-                  className="hover-scale border-primary/20 hover:border-primary/40"
+                  className="hover-scale"
                 >
                   Sign In
                 </Button>
                 <Button 
-                  onClick={() => navigate('/auth')}
-                  className="btn-gradient"
+                  onClick={() => navigate('/auth')} 
+                  className="gradient-primary shadow-glow hover-scale"
                 >
                   Get Started
                 </Button>
@@ -205,75 +223,137 @@ export const Header = () => {
             )}
 
             {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden hover-scale">
+                <Button variant="ghost" size="sm" className="md:hidden h-10 w-10 hover-scale">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] bg-background backdrop-blur-sm shadow-elegant">
-                <div className="flex flex-col space-y-4 mt-8">
-                  {navigationItems.map((item) => (
-                    <button
-                      key={item.name}
-                      onClick={() => {
-                        navigate(item.path);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`text-left text-lg font-medium transition-colors ${
-                        location.pathname === item.path 
-                          ? 'text-primary' 
-                          : 'text-foreground hover:text-primary'
-                      }`}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                  
-                  {user && (
-                    <div className="flex flex-col space-y-2 pt-4 border-t border-border">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          navigate('/add-item');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        List Item
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          navigate('/add-service');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="justify-start"
-                      >
-                        <Briefcase className="h-4 w-4 mr-2" />
-                        List Service
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {!user && (
-                    <div className="flex flex-col space-y-2 pt-4 border-t border-border">
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] glass-effect">
+                <div className="flex flex-col h-full">
+                  {/* Logo in mobile menu */}
+                  <div className="flex items-center space-x-2 mb-8 pb-4 border-b border-border/20">
+                    <img 
+                      src={borrowpalLogo} 
+                      alt="BorrowPal" 
+                      className="h-8 w-auto object-contain"
+                    />
+                    <span className="text-lg font-bold gradient-text">BorrowPal</span>
+                  </div>
+
+                  {/* Navigation Items */}
+                  <nav className="flex flex-col space-y-2 mb-6">
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Button
+                          key={item.path}
+                          variant={location.pathname === item.path ? "default" : "ghost"}
+                          onClick={() => {
+                            navigate(item.path);
+                            setIsOpen(false);
+                          }}
+                          className="justify-start"
+                        >
+                          {Icon && <Icon className="h-4 w-4 mr-2" />}
+                          {item.label}
+                        </Button>
+                      );
+                    })}
+                  </nav>
+
+                  {user ? (
+                    <>
+                      {/* Quick Actions */}
+                      <div className="mb-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3">Quick Actions</h3>
+                        <div className="space-y-2">
+                          {quickActions.map((action) => {
+                            const Icon = action.icon;
+                            return (
+                              <Button
+                                key={action.path}
+                                variant={action.variant}
+                                onClick={() => {
+                                  navigate(action.path);
+                                  setIsOpen(false);
+                                }}
+                                className="w-full justify-start"
+                              >
+                                <Icon className="h-4 w-4 mr-2" />
+                                {action.label}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* User Section */}
+                      <div className="border-t border-border/20 pt-6 mt-auto">
+                        <div className="flex items-center space-x-3 mb-4 p-3 rounded-lg bg-muted/30">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src="" alt="User" />
+                            <AvatarFallback className="bg-gradient-primary text-white">
+                              {user.email?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium truncate">{user.email}</p>
+                            <p className="text-xs text-muted-foreground">User Account</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                          {userNavItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Button
+                                key={item.path}
+                                variant="ghost"
+                                onClick={() => {
+                                  navigate(item.path);
+                                  setIsOpen(false);
+                                }}
+                                className="w-full justify-start"
+                              >
+                                <Icon className="h-4 w-4 mr-2" />
+                                {item.label}
+                              </Button>
+                            );
+                          })}
+                        </div>
+
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            handleSignOut();
+                            setIsOpen(false);
+                          }}
+                          className="w-full justify-start text-destructive hover:text-destructive"
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign out
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-3 mt-auto pt-6 border-t border-border/20">
                       <Button 
                         variant="outline" 
                         onClick={() => {
                           navigate('/auth');
-                          setMobileMenuOpen(false);
+                          setIsOpen(false);
                         }}
+                        className="w-full"
                       >
                         Sign In
                       </Button>
                       <Button 
                         onClick={() => {
                           navigate('/auth');
-                          setMobileMenuOpen(false);
-                        }}
-                        className="btn-gradient"
+                          setIsOpen(false);
+                        }} 
+                        className="w-full gradient-primary"
                       >
                         Get Started
                       </Button>

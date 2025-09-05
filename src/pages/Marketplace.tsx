@@ -59,7 +59,7 @@ const Marketplace = () => {
         .from('items')
         .select(`
           *,
-          profiles!items_owner_id_fkey (
+          profiles!owner_id (
             full_name,
             rating
           )
@@ -90,25 +90,36 @@ const Marketplace = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <div className="h-8 bg-gray-200 rounded w-48 mb-6 animate-pulse"></div>
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="h-10 bg-gray-200 rounded flex-1 animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
-            </div>
+          <div className="text-center mb-12">
+            <div className="h-12 bg-muted rounded-lg w-64 mx-auto mb-6 animate-pulse"></div>
+            <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
+          </div>
+          <div className="max-w-4xl mx-auto mb-8">
+            <Card className="glass-effect">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="h-12 bg-muted rounded flex-1 animate-pulse"></div>
+                  <div className="h-12 bg-muted rounded w-48 animate-pulse"></div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-lg border shadow-sm">
-                <div className="h-48 bg-gray-200 rounded-t-lg animate-pulse"></div>
-                <div className="p-4">
-                  <div className="h-5 bg-gray-200 rounded mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-3 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                </div>
-              </div>
+              <Card key={i} className="glass-card shadow-card border-0 bg-card/80">
+                <div className="h-48 bg-muted rounded-t-lg animate-pulse"></div>
+                <CardHeader className="pb-2">
+                  <div className="h-6 bg-muted rounded mb-2 animate-pulse"></div>
+                  <div className="h-8 bg-muted rounded w-24 animate-pulse"></div>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  <div className="h-4 bg-muted rounded animate-pulse"></div>
+                  <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+                  <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
