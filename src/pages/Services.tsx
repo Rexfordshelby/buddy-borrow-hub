@@ -77,7 +77,7 @@ const Services = () => {
       case 'price_high':
         return Number(b.price) - Number(a.price);
       case 'rating':
-        return Number(b.rating) - Number(a.rating);
+        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
       default:
         return 0;
     }
@@ -284,11 +284,13 @@ const Services = () => {
                       ${Number(service.price).toFixed(2)}
                       <span className="text-sm font-normal text-muted-foreground">/{service.price_type.replace('_', ' ')}</span>
                     </span>
-                    <div className="flex items-center text-amber-500">
-                      <Star className="h-4 w-4 fill-current" />
-                      <span className="ml-1 text-sm font-medium">{Number(service.rating).toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">({service.total_reviews})</span>
-                    </div>
+                      {service.rating > 0 && (
+                        <div className="flex items-center text-amber-500">
+                          <Star className="h-4 w-4 fill-current" />
+                          <span className="ml-1 text-sm font-medium">{Number(service.rating).toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground">({service.total_reviews || 0})</span>
+                        </div>
+                      )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-3">

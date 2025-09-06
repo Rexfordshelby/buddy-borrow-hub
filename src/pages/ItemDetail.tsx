@@ -131,7 +131,7 @@ const ItemDetail = () => {
       return;
     }
 
-    if (user.id === item.profiles.id) {
+    if (user.id === item.profiles?.id) {
       toast({
         title: "Cannot Borrow Own Item",
         description: "You cannot borrow your own item",
@@ -151,7 +151,7 @@ const ItemDetail = () => {
         .insert({
           item_id: item.id,
           borrower_id: user.id,
-          lender_id: item.profiles.id,
+          lender_id: item.profiles?.id,
           start_date: startDate,
           end_date: endDate,
           total_amount: totalAmount,
@@ -187,7 +187,7 @@ const ItemDetail = () => {
       await supabase
         .from("notifications")
         .insert({
-          user_id: item.profiles.id,
+          user_id: item.profiles?.id,
           title: "New Borrow Request",
           message: `${user.email} wants to borrow your ${item.title}`,
           type: "borrow_request"
@@ -370,19 +370,23 @@ const ItemDetail = () => {
               <CardContent>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
-                    {item.profiles.full_name?.charAt(0) || "U"}
+                    {item.profiles?.full_name?.charAt(0) || "U"}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold">{item.profiles.full_name}</h3>
+                    <h3 className="font-semibold">{item.profiles?.full_name || 'Unknown Owner'}</h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{item.profiles.rating.toFixed(1)}</span>
-                      </div>
-                      <span>•</span>
-                      <span>{item.profiles.total_reviews} reviews</span>
+                      {item.profiles?.rating && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span>{Number(item.profiles.rating).toFixed(1)}</span>
+                          </div>
+                          <span>•</span>
+                        </>
+                      )}
+                      <span>{item.profiles?.total_reviews || 0} reviews</span>
                     </div>
-                    {item.profiles.bio && (
+                    {item.profiles?.bio && (
                       <p className="text-sm text-muted-foreground mt-2">{item.profiles.bio}</p>
                     )}
                   </div>
@@ -406,7 +410,7 @@ const ItemDetail = () => {
 
             {/* Request Button */}
             {user ? (
-              user.id !== item.profiles.id ? (
+              user.id !== item.profiles?.id ? (
                 <Dialog open={isRequestModalOpen} onOpenChange={setIsRequestModalOpen}>
                   <DialogTrigger asChild>
                     <Button className="w-full gradient-primary shadow-elegant" size="lg">

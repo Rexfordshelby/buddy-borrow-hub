@@ -269,14 +269,16 @@ const Marketplace = () => {
                       <MapPin className="h-3 w-3 mr-1" />
                       <span className="truncate text-xs">{item.location || 'Location not specified'}</span>
                     </div>
-                    <div className="flex items-center text-amber-500">
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      <span className="text-xs font-medium">{item.profiles.rating.toFixed(1)}</span>
-                    </div>
+                    {item.profiles?.rating && (
+                      <div className="flex items-center text-amber-500">
+                        <Star className="h-3 w-3 mr-1 fill-current" />
+                        <span className="text-xs font-medium">{Number(item.profiles.rating).toFixed(1)}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border/50">
                     <div className="text-xs text-muted-foreground">
-                      by {item.profiles.full_name}
+                      by {item.profiles?.full_name || 'Unknown Owner'}
                     </div>
                     <Badge variant="outline" className="text-xs">
                       ${item.deposit_amount} deposit
