@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Heart, Package, Briefcase, Search, Filter, Star, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FavoriteButton } from '../components/FavoriteButton';
+import { Layout } from '@/components/Layout';
 
 interface FavoriteItem {
   id: string;
@@ -21,7 +22,7 @@ interface FavoriteItem {
   category: string;
 }
 
-export default function Favorites() {
+const Favorites = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -32,6 +33,8 @@ export default function Favorites() {
   useEffect(() => {
     if (user) {
       fetchFavorites();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
@@ -39,59 +42,71 @@ export default function Favorites() {
     if (!user) return;
 
     try {
-      // For now, use localStorage to simulate favorites
-      const favoriteKeys = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
+      setLoading(true);
       
+      // Fetch user favorites and then get the actual items/services separately
+      const { data: userFavorites, error } = await supabase
+        .from('user_favorites')
+        .select('id, item_id, service_id')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching favorites:', error);
+        setFavorites([]);
+        return;
+      }
+
       const favoriteItems: FavoriteItem[] = [];
       
-      for (const key of favoriteKeys) {
-        if (key.startsWith('item_')) {
-          const itemId = key.replace('item_', '');
-          const { data } = await supabase
-            .from('items')
-            .select('*')
-            .eq('id', itemId)
-            .single();
-          
-          if (data) {
-            favoriteItems.push({
-              id: data.id,
-              type: 'item',
-              title: data.title,
-              description: data.description,
-              price: data.price_per_day,
-              location: data.location,
-              image: data.images?.[0],
-              category: data.category
-            });
-          }
-        } else if (key.startsWith('service_')) {
-          const serviceId = key.replace('service_', '');
-          const { data } = await supabase
-            .from('services')
-            .select('*')
-            .eq('id', serviceId)
-            .single();
-          
-          if (data) {
-            favoriteItems.push({
-              id: data.id,
-              type: 'service',
-              title: data.title,
-              description: data.description,
-              price: data.price,
-              location: data.location,
-              rating: data.rating,
-              image: data.images?.[0],
-              category: data.category
-            });
-          }
-        }
+      // Fetch items
+      const itemIds = userFavorites?.filter(f => f.item_id).map(f => f.item_id) || [];
+      if (itemIds.length > 0) {
+        const { data: items } = await supabase
+          .from('items')
+          .select('id, title, description, price_per_day, location, images, category')
+          .in('id', itemIds);
+
+        items?.forEach(item => {
+          favoriteItems.push({
+            id: item.id,
+            type: 'item',
+            title: item.title,
+            description: item.description,
+            price: item.price_per_day,
+            location: item.location,
+            image: item.images?.[0],
+            category: item.category
+          });
+        });
+      }
+
+      // Fetch services
+      const serviceIds = userFavorites?.filter(f => f.service_id).map(f => f.service_id) || [];
+      if (serviceIds.length > 0) {
+        const { data: services } = await supabase
+          .from('services')
+          .select('id, title, description, price, location, images, category, rating')
+          .in('id', serviceIds);
+
+        services?.forEach(service => {
+          favoriteItems.push({
+            id: service.id,
+            type: 'service',
+            title: service.title,
+            description: service.description,
+            price: service.price,
+            location: service.location,
+            rating: service.rating,
+            image: service.images?.[0],
+            category: service.category
+          });
+        });
       }
       
       setFavorites(favoriteItems);
     } catch (error) {
       console.error('Error fetching favorites:', error);
+      setFavorites([]);
     } finally {
       setLoading(false);
     }
@@ -113,20 +128,22 @@ export default function Favorites() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
-        <Card className="max-w-md mx-auto glass-effect">
-          <CardContent className="text-center p-8">
-            <Heart className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-4">Please sign in to view favorites</h2>
-            <Button onClick={() => navigate('/auth')}>Sign In</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <Layout showHeader={true}>
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <Card className="max-w-md mx-auto glass-effect">
+            <CardContent className="text-center p-8">
+              <Heart className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h2 className="text-xl font-semibold mb-4">Please sign in to view favorites</h2>
+              <Button onClick={() => navigate('/auth')}>Sign In</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <Layout showHeader={true}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -304,6 +321,8 @@ export default function Favorites() {
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default Favorites;

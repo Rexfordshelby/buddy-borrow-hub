@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Calendar, Star } from 'lucide-react';
+import { Layout } from '@/components/Layout';
 
 interface Item {
   id: string;
@@ -128,7 +129,7 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <Layout showHeader={true}>
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -290,7 +291,7 @@ const Marketplace = () => {
         {/* Add some spacing at the bottom */}
         <div className="h-16" />
       </div>
-    </div>
+    </Layout>
   );
 };
 

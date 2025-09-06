@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, MapPin, Star, Clock, Wrench, Car, Home, Utensils, Scissors, Camera, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Layout } from '@/components/Layout';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Service = Tables<'services'>;
@@ -125,7 +126,7 @@ const Services = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-emerald-50/30">
+    <Layout showHeader={true}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -368,7 +369,7 @@ const Services = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
