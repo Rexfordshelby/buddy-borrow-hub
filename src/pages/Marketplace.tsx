@@ -55,20 +55,46 @@ const Marketplace = () => {
 
   const fetchItems = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch items
+      const { data: itemsData, error: itemsError } = await supabase
         .from('items')
-        .select(`
-          *,
-          profiles!owner_id (
-            full_name,
-            rating
-          )
-        `)
+        .select('*')
         .eq('availability', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setItems(data || []);
+      if (itemsError) throw itemsError;
+
+      if (!itemsData || itemsData.length === 0) {
+        setItems([]);
+        return;
+      }
+
+      // Get unique owner IDs
+      const ownerIds = [...new Set(itemsData.map(item => item.owner_id))];
+
+      // Fetch profiles for all owners
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, rating')
+        .in('id', ownerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles by ID for efficient lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
+      // Combine items with their owner profiles
+      const itemsWithProfiles = itemsData.map(item => ({
+        ...item,
+        profiles: profilesMap.get(item.owner_id) || {
+          full_name: 'Unknown User',
+          rating: 0
+        }
+      }));
+
+      setItems(itemsWithProfiles);
     } catch (error) {
       console.error('Error fetching items:', error);
       toast({

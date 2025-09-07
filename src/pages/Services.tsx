@@ -38,20 +38,46 @@ const Services = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      // First fetch services
+      const { data: servicesData, error: servicesError } = await supabase
         .from('services')
-        .select(`
-          *,
-          profiles!provider_id (
-            full_name,
-            rating
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setServices(data || []);
+      if (servicesError) throw servicesError;
+
+      if (!servicesData || servicesData.length === 0) {
+        setServices([]);
+        return;
+      }
+
+      // Get unique provider IDs
+      const providerIds = [...new Set(servicesData.map(service => service.provider_id))];
+
+      // Fetch profiles for all providers
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, rating')
+        .in('id', providerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles by ID for efficient lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
+      // Combine services with their provider profiles
+      const servicesWithProfiles = servicesData.map(service => ({
+        ...service,
+        profiles: profilesMap.get(service.provider_id) || {
+          full_name: 'Unknown Provider',
+          rating: 0
+        }
+      }));
+
+      setServices(servicesWithProfiles);
     } catch (error) {
       console.error('Error fetching services:', error);
       toast({
