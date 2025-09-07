@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Calendar, Star } from 'lucide-react';
-import { Layout } from '@/components/Layout';
 
 interface Item {
   id: string;
@@ -129,7 +128,7 @@ const Marketplace = () => {
   }
 
   return (
-    <Layout showHeader={true}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -269,16 +268,14 @@ const Marketplace = () => {
                       <MapPin className="h-3 w-3 mr-1" />
                       <span className="truncate text-xs">{item.location || 'Location not specified'}</span>
                     </div>
-                    {item.profiles?.rating && (
-                      <div className="flex items-center text-amber-500">
-                        <Star className="h-3 w-3 mr-1 fill-current" />
-                        <span className="text-xs font-medium">{Number(item.profiles.rating).toFixed(1)}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center text-amber-500">
+                      <Star className="h-3 w-3 mr-1 fill-current" />
+                      <span className="text-xs font-medium">{item.profiles.rating.toFixed(1)}</span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border/50">
                     <div className="text-xs text-muted-foreground">
-                      by {item.profiles?.full_name || 'Unknown Owner'}
+                      by {item.profiles.full_name}
                     </div>
                     <Badge variant="outline" className="text-xs">
                       ${item.deposit_amount} deposit
@@ -293,7 +290,7 @@ const Marketplace = () => {
         {/* Add some spacing at the bottom */}
         <div className="h-16" />
       </div>
-    </Layout>
+    </div>
   );
 };
 

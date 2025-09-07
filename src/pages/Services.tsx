@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, MapPin, Star, Clock, Wrench, Car, Home, Utensils, Scissors, Camera, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Layout } from '@/components/Layout';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Service = Tables<'services'>;
@@ -77,7 +76,7 @@ const Services = () => {
       case 'price_high':
         return Number(b.price) - Number(a.price);
       case 'rating':
-        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+        return Number(b.rating) - Number(a.rating);
       default:
         return 0;
     }
@@ -126,7 +125,7 @@ const Services = () => {
   }
 
   return (
-    <Layout showHeader={true}>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-emerald-50/30">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -284,13 +283,11 @@ const Services = () => {
                       ${Number(service.price).toFixed(2)}
                       <span className="text-sm font-normal text-muted-foreground">/{service.price_type.replace('_', ' ')}</span>
                     </span>
-                      {service.rating > 0 && (
-                        <div className="flex items-center text-amber-500">
-                          <Star className="h-4 w-4 fill-current" />
-                          <span className="ml-1 text-sm font-medium">{Number(service.rating).toFixed(1)}</span>
-                          <span className="text-xs text-muted-foreground">({service.total_reviews || 0})</span>
-                        </div>
-                      )}
+                    <div className="flex items-center text-amber-500">
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="ml-1 text-sm font-medium">{Number(service.rating).toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">({service.total_reviews})</span>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-3">
@@ -371,7 +368,7 @@ const Services = () => {
           </Card>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
