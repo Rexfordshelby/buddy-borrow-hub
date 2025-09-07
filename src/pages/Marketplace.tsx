@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Search, MapPin, Calendar, Star } from 'lucide-react';
+import { Layout } from '@/components/Layout';
 
 interface Item {
   id: string;
@@ -115,8 +116,9 @@ const Marketplace = () => {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+  return (
+    <Layout>
+      <div className="bg-gradient-to-br from-background via-background to-primary/5">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center mb-12">
             <div className="h-12 bg-muted rounded-lg w-64 mx-auto mb-6 animate-pulse"></div>
@@ -147,10 +149,10 @@ const Marketplace = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
         </div>
       </div>
-    );
+    </Layout>
+  );
   }
 
   return (
@@ -239,9 +241,10 @@ const Marketplace = () => {
                 >
                   🚀 List Your First Item
                 </Button>
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </Layout>
+  );
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredItems.map((item) => (

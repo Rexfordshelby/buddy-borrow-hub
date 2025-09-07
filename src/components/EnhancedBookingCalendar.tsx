@@ -87,28 +87,73 @@ export function EnhancedBookingCalendar({ service, isProvider = false }: Enhance
   const fetchBookings = async () => {
     if (!user) return;
 
-    const query = supabase
-      .from("service_bookings")
-      .select(`
-        *,
-        service:services(title),
-        customer:profiles!service_bookings_customer_id_fkey(full_name, phone),
-        provider:profiles!service_bookings_provider_id_fkey(full_name, phone)
-      `);
+    try {
+      // First fetch service bookings
+      let query = supabase
+        .from("service_bookings")
+        .select("*");
 
-    if (isProvider) {
-      query.eq("provider_id", user.id);
-    } else {
-      query.eq("customer_id", user.id);
-    }
+      if (isProvider) {
+        query = query.eq("provider_id", user.id);
+      } else {
+        query = query.eq("customer_id", user.id);
+      }
 
-    if (service) {
-      query.eq("service_id", service.id);
-    }
+      if (service) {
+        query = query.eq("service_id", service.id);
+      }
 
-    const { data } = await query.order('created_at', { ascending: false });
-    if (data) {
-      setBookings(data as Booking[]);
+      const { data: bookingsData, error: bookingsError } = await query
+        .order('created_at', { ascending: false });
+
+      if (bookingsError) throw bookingsError;
+
+      if (!bookingsData || bookingsData.length === 0) {
+        setBookings([]);
+        return;
+      }
+
+      // Get unique service IDs, customer IDs, and provider IDs
+      const serviceIds = [...new Set(bookingsData.map(b => b.service_id))];
+      const customerIds = [...new Set(bookingsData.map(b => b.customer_id))];
+      const providerIds = [...new Set(bookingsData.map(b => b.provider_id))];
+      const userIds = [...new Set([...customerIds, ...providerIds])];
+
+      // Fetch services data
+      const { data: servicesData, error: servicesError } = await supabase
+        .from("services")
+        .select("id, title")
+        .in("id", serviceIds);
+
+      if (servicesError) throw servicesError;
+
+      // Fetch profiles data
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create lookup maps
+      const servicesMap = new Map(
+        (servicesData || []).map(service => [service.id, service])
+      );
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.id, profile])
+      );
+
+      // Combine data
+      const bookingsWithDetails = bookingsData.map(booking => ({
+        ...booking,
+        service: servicesMap.get(booking.service_id) || { title: 'Unknown Service' },
+        customer: profilesMap.get(booking.customer_id) || { full_name: 'Unknown Customer', phone: null },
+        provider: profilesMap.get(booking.provider_id) || { full_name: 'Unknown Provider', phone: null }
+      }));
+
+      setBookings(bookingsWithDetails);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
     }
   };
 
@@ -257,14 +302,22 @@ export function EnhancedBookingCalendar({ service, isProvider = false }: Enhance
     // Create notification for customer
     const booking = bookings.find(b => b.id === bookingId);
     if (booking) {
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: isProvider ? booking.customer.full_name : booking.provider?.full_name,
-          title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-          message: `Your booking for ${booking.service.title} has been ${status}`,
-          type: "booking_update"
-        });
+      // We need to get the actual user IDs, not the profile names
+      // Since we have the booking data from fetchBookings, we need to use the original data structure
+      const targetUserId = isProvider 
+        ? (booking as any).customer_id 
+        : (booking as any).provider_id;
+        
+      if (targetUserId) {
+        await supabase
+          .from("notifications")
+          .insert({
+            user_id: targetUserId,
+            title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+            message: `Your booking for ${booking.service.title} has been ${status}`,
+            type: "booking_update"
+          });
+      }
     }
 
     toast({

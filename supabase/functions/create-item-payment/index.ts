@@ -38,12 +38,7 @@ serve(async (req) => {
     // Get borrow request details
     const { data: request, error: requestError } = await supabaseClient
       .from("borrow_requests")
-      .select(`
-        *,
-        items!inner(title, owner_id, price_per_day),
-        borrower:profiles!borrow_requests_borrower_id_fkey(full_name),
-        lender:profiles!borrow_requests_lender_id_fkey(full_name)
-      `)
+      .select("*")
       .eq("id", requestId)
       .maybeSingle();
 
@@ -56,6 +51,38 @@ serve(async (req) => {
     if (!request) {
       throw new Error("Borrow request not found");
     }
+
+    // Get item details
+    const { data: item, error: itemError } = await supabaseClient
+      .from("items")
+      .select("title, owner_id, price_per_day")
+      .eq("id", request.item_id)
+      .maybeSingle();
+
+    if (itemError || !item) {
+      throw new Error(`Item not found: ${itemError?.message}`);
+    }
+
+    // Get borrower and lender profiles
+    const { data: borrowerProfile, error: borrowerError } = await supabaseClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", request.borrower_id)
+      .maybeSingle();
+
+    const { data: lenderProfile, error: lenderError } = await supabaseClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", request.lender_id)
+      .maybeSingle();
+
+    // Combine all data
+    const requestWithDetails = {
+      ...request,
+      items: item,
+      borrower: borrowerProfile || { full_name: 'Unknown User' },
+      lender: lenderProfile || { full_name: 'Unknown User' }
+    };
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -73,7 +100,7 @@ serve(async (req) => {
     }
 
     const daysDuration = Math.ceil(
-      (new Date(request.end_date).getTime() - new Date(request.start_date).getTime()) / 
+      (new Date(requestWithDetails.end_date).getTime() - new Date(requestWithDetails.start_date).getTime()) / 
       (1000 * 60 * 60 * 24)
     );
 
@@ -86,8 +113,8 @@ serve(async (req) => {
           price_data: {
             currency,
             product_data: {
-              name: `Rental: ${request.items.title}`,
-              description: `${daysDuration} days from ${request.start_date} to ${request.end_date}`,
+              name: `Rental: ${requestWithDetails.items.title}`,
+              description: `${daysDuration} days from ${requestWithDetails.start_date} to ${requestWithDetails.end_date}`,
             },
             unit_amount: Math.round(amount * 100), // Convert to cents
           },
@@ -99,9 +126,9 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard`,
       metadata: {
         request_id: requestId,
-        borrower_id: request.borrower_id,
-        lender_id: request.lender_id,
-        item_id: request.item_id,
+        borrower_id: requestWithDetails.borrower_id,
+        lender_id: requestWithDetails.lender_id,
+        item_id: requestWithDetails.item_id,
       },
     });
 

@@ -193,22 +193,40 @@ const PaymentSuccess = () => {
         payment_status: 'paid'
       })
       .eq('id', bookingId)
-      .select(`
-        *,
-        service:services(title, provider_id),
-        customer:profiles!service_bookings_customer_id_fkey(full_name, email),
-        provider:profiles!service_bookings_provider_id_fkey(full_name, email)
-      `)
+      .eq('payment_session_id', sessionId)
+      .select('*')
       .single();
 
     if (updateError) throw updateError;
+
+    // Get service details separately
+    const { data: serviceData, error: serviceError } = await supabase
+      .from('services')
+      .select('title, provider_id')
+      .eq('id', bookingData.service_id)
+      .single();
+
+    if (serviceError) throw serviceError;
+
+    // Get customer and provider profiles separately
+    const { data: customerProfile, error: customerError } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', bookingData.customer_id)
+      .single();
+
+    const { data: providerProfile, error: providerError } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', bookingData.provider_id)
+      .single();
 
     // Create notification for service provider
     await supabase.from('notifications').insert({
       user_id: bookingData.provider_id,
       type: 'service_booking_paid',
       title: 'Payment Received!',
-      message: `${bookingData.customer.full_name} has paid for your "${bookingData.service.title}" service booking on ${bookingData.booking_date}.`,
+      message: `${customerProfile?.full_name || 'A customer'} has paid for your "${serviceData.title}" service booking on ${bookingData.booking_date}.`,
     });
 
     // Create wallet transaction for provider
@@ -216,7 +234,7 @@ const PaymentSuccess = () => {
       user_id: bookingData.provider_id,
       type: 'service_payment',
       amount: bookingData.total_amount,
-      description: `Payment received for "${bookingData.service.title}" service`,
+      description: `Payment received for "${serviceData.title}" service`,
       from_user_id: bookingData.customer_id,
       to_user_id: bookingData.provider_id,
       status: 'completed'
@@ -227,7 +245,7 @@ const PaymentSuccess = () => {
 
     setReceiptData({
       type: 'service_booking',
-      title: bookingData.service.title,
+      title: serviceData.title,
       amount: bookingData.total_amount,
       date: bookingData.booking_date,
       time: `${bookingData.start_time} - ${bookingData.end_time}`,

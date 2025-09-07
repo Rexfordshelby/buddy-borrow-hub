@@ -72,25 +72,16 @@ const ItemDetail = () => {
 
   const fetchItem = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch the item
+      const { data: itemData, error: itemError } = await supabase
         .from("items")
-        .select(`
-          *,
-          profiles!items_owner_id_fkey(
-            id,
-            full_name,
-            rating,
-            total_reviews,
-            avatar_url,
-            bio
-          )
-        `)
+        .select("*")
         .eq("id", id)
         .eq("availability", true)
         .maybeSingle();
 
-      if (error) throw error;
-      if (!data) {
+      if (itemError) throw itemError;
+      if (!itemData) {
         toast({
           title: "Item not found",
           description: "This item may have been removed or is no longer available.",
@@ -99,7 +90,30 @@ const ItemDetail = () => {
         navigate("/marketplace");
         return;
       }
-      setItem(data);
+
+      // Fetch the owner's profile
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, full_name, rating, total_reviews, avatar_url, bio")
+        .eq("id", itemData.owner_id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      // Combine item with profile data
+      const itemWithProfile = {
+        ...itemData,
+        profiles: profileData || {
+          id: itemData.owner_id,
+          full_name: 'Unknown User',
+          rating: 0,
+          total_reviews: 0,
+          avatar_url: null,
+          bio: null
+        }
+      };
+
+      setItem(itemWithProfile);
     } catch (error) {
       console.error("Error fetching item:", error);
       toast({

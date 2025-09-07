@@ -35,13 +35,10 @@ serve(async (req) => {
 
     console.log("Getting booking details for ID:", bookingId);
     
-    // Get booking details with proper joins
+    // Get booking details
     const { data: booking, error: bookingError } = await supabaseClient
       .from("service_bookings")
-      .select(`
-        *,
-        services!inner(title, provider_id)
-      `)
+      .select("*")
       .eq("id", bookingId)
       .maybeSingle();
 
@@ -54,6 +51,23 @@ serve(async (req) => {
     if (!booking) {
       throw new Error("Booking not found");
     }
+
+    // Get service details
+    const { data: service, error: serviceError } = await supabaseClient
+      .from("services")
+      .select("title, provider_id")
+      .eq("id", booking.service_id)
+      .maybeSingle();
+
+    if (serviceError || !service) {
+      throw new Error(`Service not found: ${serviceError?.message}`);
+    }
+
+    // Combine booking with service data
+    const bookingWithService = {
+      ...booking,
+      services: service
+    };
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -79,8 +93,8 @@ serve(async (req) => {
           price_data: {
             currency,
             product_data: {
-              name: `Service: ${booking.services.title}`,
-              description: `Booking for ${booking.booking_date} at ${booking.start_time}`,
+              name: `Service: ${bookingWithService.services.title}`,
+              description: `Booking for ${bookingWithService.booking_date} at ${bookingWithService.start_time}`,
             },
             unit_amount: Math.round(amount * 100), // Convert to cents
           },
@@ -92,8 +106,8 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard`,
       metadata: {
         booking_id: bookingId,
-        provider_id: booking.services.provider_id,
-        customer_id: booking.customer_id,
+        provider_id: bookingWithService.services.provider_id,
+        customer_id: bookingWithService.customer_id,
       },
     });
 
